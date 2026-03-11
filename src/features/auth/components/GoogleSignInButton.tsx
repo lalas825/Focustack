@@ -1,8 +1,10 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { useTranslation } from "@/shared/lib/i18n";
 
 export function GoogleSignInButton() {
+  const { t } = useTranslation();
   const handleGoogleLogin = async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -23,7 +25,7 @@ export function GoogleSignInButton() {
         color: "#7B68EE",
       }}
     >
-      Continuar con Google
+      {t("login.google")}
     </button>
   );
 }

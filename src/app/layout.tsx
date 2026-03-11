@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/features/auth/components/AuthProvider";
+import { I18nProvider } from "@/shared/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Focustack — Deep Focus",
-  description: "Un proyecto por dia. Deep focus. Ship it.",
+  description: "One project per day. Deep focus. Ship it.",
 };
 
 export default function RootLayout({
@@ -13,9 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="dark">
+    <html lang="en" className="dark">
       <body className="min-h-screen bg-bg-primary">
-        <AuthProvider>{children}</AuthProvider>
+        <I18nProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </I18nProvider>
       </body>
     </html>
   );

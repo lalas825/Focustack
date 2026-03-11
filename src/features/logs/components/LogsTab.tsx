@@ -3,30 +3,32 @@
 import { useLogsStore } from "@/features/logs/store";
 import { PROJECTS } from "@/features/projects/data/projects";
 import { Btn } from "@/shared/components/Btn";
+import { useTranslation } from "@/shared/lib/i18n";
 
 interface LogsTabProps {
   onExport: () => void;
 }
 
 export function LogsTab({ onExport }: LogsTabProps) {
+  const { t } = useTranslation();
   const { logs } = useLogsStore();
 
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h3 className="text-sm text-text-secondary font-medium">REGISTRO DE SESIONES</h3>
+        <h3 className="text-sm text-text-secondary font-medium">{t("logs.title")}</h3>
         {logs.length > 0 && (
           <Btn color="#00E5A0" onClick={onExport}>
-            Copiar ultimo
+            {t("logs.copyLast")}
           </Btn>
         )}
       </div>
 
       {logs.length === 0 ? (
         <div className="card text-center py-10">
-          <p className="text-text-muted text-sm">No hay sesiones registradas.</p>
+          <p className="text-text-muted text-sm">{t("logs.empty")}</p>
           <p className="text-text-dark text-xs mt-1">
-            Termina tu primera sesion para ver el registro.
+            {t("logs.emptyHint")}
           </p>
         </div>
       ) : (
@@ -54,7 +56,7 @@ export function LogsTab({ onExport }: LogsTabProps) {
                   <div className="text-xs text-red-400/60">{log.blockers}</div>
                 )}
                 <div className="text-[11px] text-text-dark mt-2">
-                  Manana: {log.tomorrowProject}
+                  {t("logs.tomorrow")}: {log.tomorrowProject}
                 </div>
               </div>
             );

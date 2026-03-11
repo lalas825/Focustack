@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/shared/lib/i18n";
 
 interface TaskInputProps {
   onAdd: (text: string) => void;
@@ -8,6 +9,7 @@ interface TaskInputProps {
 }
 
 export function TaskInput({ onAdd, color }: TaskInputProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const handleSubmit = () => {
     if (text.trim()) {
@@ -21,7 +23,7 @@ export function TaskInput({ onAdd, color }: TaskInputProps) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-        placeholder="+ Nueva tarea..."
+        placeholder={t("task.placeholder")}
         className="input-base flex-1"
       />
       <button

@@ -5,8 +5,10 @@ import { useTimerTick } from "@/features/timer/hooks/useTimerTick";
 import { TimerDisplay } from "@/features/timer/components/TimerDisplay";
 import { ProjectBadge } from "@/shared/components/ProjectBadge";
 import { Btn } from "@/shared/components/Btn";
+import { useTranslation } from "@/shared/lib/i18n";
 
 export default function TodayPage() {
+  const { t } = useTranslation();
   const { running, start, pause, reset, seconds, project } = useTimerStore();
 
   useTimerTick();
@@ -20,11 +22,11 @@ export default function TodayPage() {
       <div className="flex gap-3 mt-8">
         {!running ? (
           <Btn color={project.color} onClick={start}>
-            Iniciar
+            {t("timer.start")}
           </Btn>
         ) : (
           <Btn color="#FFD93D" onClick={pause}>
-            Pausa
+            {t("timer.pause")}
           </Btn>
         )}
         {seconds > 0 && (

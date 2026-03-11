@@ -2,17 +2,19 @@
 
 import { useHoursStore } from "@/features/planner/store";
 import { PROJECTS, ACTIVE_PROJECTS } from "@/features/projects/data/projects";
-import { getToday, DAYS, DAYS_ES } from "@/shared/lib/utils";
+import { getToday, DAYS } from "@/shared/lib/utils";
 import { ProgressBar } from "@/shared/components/ProgressBar";
+import { useTranslation } from "@/shared/lib/i18n";
 
 export function WeekTab() {
+  const { t } = useTranslation();
   const { hours } = useHoursStore();
 
   return (
     <div className="space-y-5">
       <div className="card">
         <h3 className="text-sm text-text-secondary font-medium mb-5">
-          HORAS ESTA SEMANA
+          {t("week.hoursThisWeek")}
         </h3>
         {ACTIVE_PROJECTS.map((p) => {
           const logged = (hours[p.id] || 0) / 3600;
@@ -34,7 +36,7 @@ export function WeekTab() {
           );
         })}
         <div className="mt-5 pt-4 border-t border-bg-elevated flex justify-between">
-          <span className="text-sm text-text-secondary">Total</span>
+          <span className="text-sm text-text-secondary">{t("week.total")}</span>
           <span className="text-sm text-white font-semibold">
             {(Object.values(hours).reduce((a, b) => a + b, 0) / 3600).toFixed(1)}h / 30h
           </span>
@@ -43,7 +45,7 @@ export function WeekTab() {
 
       <div className="card">
         <h3 className="text-sm text-text-secondary font-medium mb-5">
-          PLAN SEMANAL
+          {t("week.weeklyPlan")}
         </h3>
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
           {DAYS.map((day, i) => {
@@ -64,7 +66,7 @@ export function WeekTab() {
                   className="text-[10px] tracking-[1px] uppercase mb-1.5"
                   style={{ color: isToday ? "#fff" : "#555", fontWeight: isToday ? 700 : 400 }}
                 >
-                  {DAYS_ES[i].slice(0, 3)}
+                  {t(`days.${i}` as any)}
                 </div>
                 {proj ? (
                   <>

@@ -2,12 +2,14 @@
 
 import { useTimerStore } from "@/features/timer/store";
 import { formatTime } from "@/shared/lib/utils";
+import { useTranslation } from "@/shared/lib/i18n";
 
 export function TimerDisplay() {
+  const { t } = useTranslation();
   const { seconds, running, project, pomodoroMode, pomodoroRemaining } = useTimerStore();
 
   const displayTime = pomodoroMode ? pomodoroRemaining : seconds;
-  const label = pomodoroMode ? `POMODORO ${pomodoroMode} MIN` : "FOCUS SESSION";
+  const label = pomodoroMode ? `${t("timer.pomodoro")} ${pomodoroMode} MIN` : t("timer.focusSession");
 
   return (
     <div className="text-center">
@@ -27,7 +29,7 @@ export function TimerDisplay() {
 
       {pomodoroMode && (
         <div className="text-xs text-text-muted mb-3">
-          Sesion: {formatTime(seconds)}
+          {t("timer.session")}: {formatTime(seconds)}
         </div>
       )}
 
@@ -37,7 +39,7 @@ export function TimerDisplay() {
           style={{ backgroundColor: running ? "#00E5A0" : "#555" }}
         />
         <span className="text-xs text-text-muted">
-          {running ? "En progreso" : seconds > 0 ? "Pausado" : "Listo"}
+          {running ? t("timer.running") : seconds > 0 ? t("timer.paused") : t("timer.ready")}
         </span>
       </div>
     </div>

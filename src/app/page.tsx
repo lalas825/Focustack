@@ -20,6 +20,7 @@ import {
 } from "@/features/cowork/telegram";
 import type { SessionLog, Project } from "@/shared/types";
 import { signOut } from "@/features/auth/services/signOut";
+import { useTranslation } from "@/shared/lib/i18n";
 
 import { useTimerTick } from "@/features/timer/hooks/useTimerTick";
 import { TimerCard } from "@/features/timer/components/TimerCard";
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const hours = useHoursStore();
   const tasks = useTasksStore();
   const logs = useLogsStore();
+  const { t, locale, setLocale, dateLocale } = useTranslation();
 
   const [showFriction, setShowFriction] = useState(false);
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
@@ -96,7 +98,7 @@ export default function Dashboard() {
     if (isTelegramConfigured()) {
       const msg = generateEndOfDay(log);
       const ok = await sendTelegram(msg);
-      setTelegramStatus(ok ? "Enviado a Telegram" : "Error al enviar");
+      setTelegramStatus(ok ? t("status.sentTelegram") : t("status.sendError"));
       setTimeout(() => setTelegramStatus(null), 3000);
     }
     timer.reset();
@@ -110,10 +112,10 @@ export default function Dashboard() {
     const msg = generateBriefing(hours.hours, lastLog);
     if (isTelegramConfigured()) {
       const ok = await sendTelegram(msg);
-      setTelegramStatus(ok ? "Briefing enviado" : "Error");
+      setTelegramStatus(ok ? t("status.briefingSent") : t("status.error"));
     } else {
       await navigator.clipboard.writeText(msg);
-      setTelegramStatus("Copiado al clipboard (Telegram no configurado)");
+      setTelegramStatus(t("status.copiedClipboard"));
     }
     setTimeout(() => setTelegramStatus(null), 3000);
   };
@@ -122,7 +124,7 @@ export default function Dashboard() {
     if (logs.logs.length === 0) return;
     const md = exportDailyLogMd(logs.logs[0]);
     navigator.clipboard.writeText(md);
-    setTelegramStatus("Log copiado en formato Cowork");
+    setTelegramStatus(t("status.logCopied"));
     setTimeout(() => setTelegramStatus(null), 3000);
   };
 
@@ -145,7 +147,7 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-white tracking-tight">FOCUSTACK</h1>
               <p className="text-xs text-text-muted mt-1 tracking-[2px] uppercase">
                 {getTodayES()} ·{" "}
-                {new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+                {new Date().toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -156,10 +158,16 @@ export default function Dashboard() {
               )}
               <ProjectBadge project={timer.project} />
               <button
+                onClick={() => setLocale(locale === "en" ? "es" : "en")}
+                className="text-[10px] text-text-dark hover:text-text-secondary transition-colors px-2 py-1 rounded border border-bg-elevated"
+              >
+                {locale === "en" ? "ES" : "EN"}
+              </button>
+              <button
                 onClick={signOut}
                 className="text-[10px] text-text-dark hover:text-text-secondary transition-colors px-2 py-1 rounded border border-bg-elevated"
               >
-                Salir
+                {t("header.signOut")}
               </button>
             </div>
           </div>
@@ -168,19 +176,19 @@ export default function Dashboard() {
         {/* ─── NAV ─────────────────────────────── */}
         <nav className="flex gap-0.5 mb-7 bg-bg-surface rounded-xl p-1">
           {([
-            { id: "today", label: "Hoy" },
-            { id: "week", label: "Semana" },
-            { id: "projects", label: "Proyectos" },
-            { id: "logs", label: "Registro" },
-          ] as const).map((t) => (
+            { id: "today", label: t("nav.today") },
+            { id: "week", label: t("nav.week") },
+            { id: "projects", label: t("nav.projects") },
+            { id: "logs", label: t("nav.logs") },
+          ] as const).map((navItem) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={navItem.id}
+              onClick={() => setTab(navItem.id)}
               className={`flex-1 py-2.5 rounded-lg text-sm font-semibold tracking-wide transition-all ${
-                tab === t.id ? "bg-bg-elevated text-white" : "text-text-muted hover:text-text-secondary"
+                tab === navItem.id ? "bg-bg-elevated text-white" : "text-text-muted hover:text-text-secondary"
               }`}
             >
-              {t.label}
+              {navItem.label}
             </button>
           ))}
         </nav>
@@ -193,10 +201,10 @@ export default function Dashboard() {
             <div className="card">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm text-text-secondary font-medium">
-                  HOY TOCA: <span style={{ color: todayProject.color }}>{todayProject.name}</span>
+                  {t("today.todayIs")} <span style={{ color: todayProject.color }}>{todayProject.name}</span>
                 </h3>
                 <span className="text-xs text-text-muted">
-                  {formatHours(hours.hours[todayProject.id] || 0)}h / {todayProject.targetHours}h sem
+                  {formatHours(hours.hours[todayProject.id] || 0)}h / {todayProject.targetHours}h {t("today.weekTarget")}
                 </span>
               </div>
               <ProgressBar
@@ -220,7 +228,7 @@ export default function Dashboard() {
 
             <div className="card">
               <div className="text-[11px] text-text-muted tracking-[2px] uppercase mb-3">
-                Cambiar Proyecto
+                {t("today.switchProject")}
               </div>
               <div className="flex gap-1.5 flex-wrap">
                 {ACTIVE_PROJECTS.map((p) => (
@@ -251,17 +259,17 @@ export default function Dashboard() {
         {showFriction && pendingProject && (
           <Modal>
             <div className="text-center">
-              <h3 className="text-[#FFD93D] text-base font-semibold mb-2">Cambiar de proyecto?</h3>
+              <h3 className="text-[#FFD93D] text-base font-semibold mb-2">{t("friction.title")}</h3>
               <p className="text-text-secondary text-sm mb-1">
-                Tienes {formatTime(timer.seconds)} en {timer.project.emoji} {timer.project.name}.
+                {`${t("friction.youHave")} ${formatTime(timer.seconds)} ${t("friction.in")} ${timer.project.emoji} ${timer.project.name}.`}
               </p>
-              <p className="text-[#FF6B6B] text-xs mb-6">La regla: un proyecto por dia. Estas seguro?</p>
+              <p className="text-[#FF6B6B] text-xs mb-6">{t("friction.rule")}</p>
               <div className="flex gap-2 justify-center">
                 <Btn color="#555" onClick={() => { setShowFriction(false); setPendingProject(null); }}>
-                  Cancelar
+                  {t("friction.cancel")}
                 </Btn>
                 <Btn color="#FF6B6B" onClick={confirmSwitch}>
-                  Si, cambiar a {pendingProject.emoji}
+                  {t("friction.confirm")} {pendingProject.emoji}
                 </Btn>
               </div>
             </div>
@@ -272,32 +280,32 @@ export default function Dashboard() {
         {showEndSession && (
           <Modal>
             <h3 className="text-[#00E5A0] text-base font-semibold mb-5">
-              Terminar Sesion — {timer.project.emoji} {timer.project.name}
+              {t("session.end")} — {timer.project.emoji} {timer.project.name}
             </h3>
             <div className="mb-4">
-              <label className="text-xs text-text-secondary block mb-1.5">Que completaste hoy?</label>
+              <label className="text-xs text-text-secondary block mb-1.5">{t("session.whatCompleted")}</label>
               <textarea
                 value={sessionNotes}
                 onChange={(e) => setSessionNotes(e.target.value)}
-                placeholder="Ej: Termine la pagina de settings, arregle el bug del timer..."
+                placeholder={t("session.completedPlaceholder")}
                 className="input-base min-h-[60px] resize-y"
               />
             </div>
             <div className="mb-5">
-              <label className="text-xs text-text-secondary block mb-1.5">Algun blocker o pendiente?</label>
+              <label className="text-xs text-text-secondary block mb-1.5">{t("session.blockers")}</label>
               <textarea
                 value={sessionBlockers}
                 onChange={(e) => setSessionBlockers(e.target.value)}
-                placeholder="Ej: Necesito el endpoint de la API..."
+                placeholder={t("session.blockersPlaceholder")}
                 className="input-base min-h-[60px] resize-y"
               />
             </div>
             <div className="flex gap-2 justify-end">
               <Btn color="#555" onClick={() => { setShowEndSession(false); timer.reset(); }}>
-                Cancelar
+                {t("session.cancel")}
               </Btn>
               <Btn color="#00E5A0" onClick={saveSession}>
-                Guardar Sesion
+                {t("session.save")}
               </Btn>
             </div>
           </Modal>
@@ -306,7 +314,7 @@ export default function Dashboard() {
         {/* ─── FOOTER ──────────────────────────── */}
         <footer className="mt-10 pt-5 border-t border-bg-surface text-center">
           <p className="text-[10px] text-text-dark tracking-[1px]">
-            FOCUSTACK v1.0 · LA MAQUINA QUE CONSTRUYE LA MAQUINA
+            {t("footer.tagline")}
           </p>
         </footer>
       </div>

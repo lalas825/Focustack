@@ -3,12 +3,14 @@
 import { useTimerStore } from "@/features/timer/store";
 import { formatTime } from "@/shared/lib/utils";
 import { Btn } from "@/shared/components/Btn";
+import { useTranslation } from "@/shared/lib/i18n";
 
 interface TimerCardProps {
   onEndSession: () => void;
 }
 
 export function TimerCard({ onEndSession }: TimerCardProps) {
+  const { t } = useTranslation();
   const { project, seconds, running, pomodoroMode, pomodoroRemaining, start, pause, startPomodoro } =
     useTimerStore();
 
@@ -18,7 +20,7 @@ export function TimerCard({ onEndSession }: TimerCardProps) {
       style={{ borderColor: project.color + "20" }}
     >
       <div className="text-[11px] text-text-muted tracking-[3px] uppercase mb-2">
-        {pomodoroMode ? `POMODORO ${pomodoroMode} MIN` : "FOCUS SESSION"}
+        {pomodoroMode ? `${t("timer.pomodoro")} ${pomodoroMode} MIN` : t("timer.focusSession")}
       </div>
 
       <div
@@ -33,7 +35,7 @@ export function TimerCard({ onEndSession }: TimerCardProps) {
 
       {pomodoroMode && (
         <div className="text-xs text-text-muted mb-3">
-          Sesion: {formatTime(seconds)}
+          {t("timer.session")}: {formatTime(seconds)}
         </div>
       )}
 
@@ -41,7 +43,7 @@ export function TimerCard({ onEndSession }: TimerCardProps) {
         {!running ? (
           <>
             <Btn color={project.color} onClick={start}>
-              Iniciar
+              {t("timer.start")}
             </Btn>
             <Btn color="#666" onClick={() => startPomodoro(25)}>
               25m
@@ -52,12 +54,12 @@ export function TimerCard({ onEndSession }: TimerCardProps) {
           </>
         ) : (
           <Btn color="#FFD93D" onClick={pause}>
-            Pausa
+            {t("timer.pause")}
           </Btn>
         )}
         {(running || seconds > 0) && (
           <Btn color="#FF6B6B" onClick={onEndSession}>
-            Terminar
+            {t("timer.end")}
           </Btn>
         )}
       </div>

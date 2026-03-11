@@ -3,12 +3,14 @@
 import { useHoursStore } from "@/features/planner/store";
 import { useTasksStore } from "@/features/projects/store";
 import { PROJECTS } from "@/features/projects/data/projects";
-import { DAYS, DAYS_ES } from "@/shared/lib/utils";
+import { DAYS } from "@/shared/lib/utils";
 import { ProgressBar } from "@/shared/components/ProgressBar";
+import { useTranslation } from "@/shared/lib/i18n";
 import { TaskInput } from "@/features/projects/components/TaskInput";
 import { TaskList } from "@/features/projects/components/TaskList";
 
 export function ProjectsTab() {
+  const { t } = useTranslation();
   const { hours } = useHoursStore();
   const { tasks, addTask, toggleTask, deleteTask } = useTasksStore();
 
@@ -40,7 +42,7 @@ export function ProjectsTab() {
                     className="text-[10px] tracking-[1px] uppercase"
                     style={{ color: isActive ? "#00E5A0" : "#FF6B6B" }}
                   >
-                    {isActive ? "ACTIVO" : "BLOQUEADO"}
+                    {isActive ? t("projects.active") : t("projects.blocked")}
                   </span>
                 </div>
               </div>
@@ -56,9 +58,9 @@ export function ProjectsTab() {
               <>
                 <ProgressBar value={logged} max={p.targetHours} color={p.color} className="mb-3" />
                 <div className="text-[11px] text-text-muted mb-2">
-                  Dias:{" "}
-                  {p.days.map((d) => DAYS_ES[DAYS.indexOf(d)].slice(0, 3)).join(", ")} ·
-                  Tareas: {doneTasks}/{projectTasks.length}
+                  {t("projects.days")}:{" "}
+                  {p.days.map((d) => t(`days.${DAYS.indexOf(d)}` as any)).join(", ")} ·
+                  {t("projects.tasks")}: {doneTasks}/{projectTasks.length}
                 </div>
                 <TaskInput onAdd={(text) => addTask(p.id, text)} color={p.color} />
                 <TaskList

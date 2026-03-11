@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "../store";
 import { loadUserData } from "../services/loadUserData";
 
 export function useAuth() {
   const { setUser, setLoading } = useAuthStore();
+  const loaded = useRef(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -15,24 +16,29 @@ export function useAuth() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setUser({ id: user.id, email: user.email ?? null });
-        loadUserData(user.id);
+        if (!loaded.current) {
+          loaded.current = true;
+          loadUserData(user.id);
+        }
       } else {
         setUser(null);
       }
       setLoading(false);
     });
 
-    // Listen for auth state changes
+    // Listen for auth state changes (fresh logins only)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser({ id: session.user.id, email: session.user.email ?? null });
-        if (event === "SIGNED_IN") {
+        if (event === "SIGNED_IN" && !loaded.current) {
+          loaded.current = true;
           await loadUserData(session.user.id);
         }
       } else {
         setUser(null);
+        loaded.current = false;
       }
     });
 

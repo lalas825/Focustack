@@ -1,0 +1,238 @@
+"use client";
+
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+
+// ─── TRANSLATIONS ──────────────────────────────────────
+const translations = {
+  en: {
+    // Nav
+    "nav.today": "Today",
+    "nav.week": "Week",
+    "nav.projects": "Projects",
+    "nav.logs": "Log",
+
+    // Header
+    "header.signOut": "Sign out",
+
+    // Timer
+    "timer.focusSession": "FOCUS SESSION",
+    "timer.pomodoro": "POMODORO",
+    "timer.session": "Session",
+    "timer.start": "Start",
+    "timer.pause": "Pause",
+    "timer.end": "End",
+    "timer.reset": "Reset",
+    "timer.running": "Running",
+    "timer.paused": "Paused",
+    "timer.ready": "Ready",
+
+    // Today tab
+    "today.todayIs": "TODAY:",
+    "today.weekTarget": "wk",
+    "today.switchProject": "Switch Project",
+
+    // Friction modal
+    "friction.title": "Switch project?",
+    "friction.youHave": "You have",
+    "friction.in": "in",
+    "friction.rule": "The rule: one project per day. Are you sure?",
+    "friction.cancel": "Cancel",
+    "friction.confirm": "Yes, switch to",
+
+    // End session modal
+    "session.end": "End Session",
+    "session.whatCompleted": "What did you complete today?",
+    "session.completedPlaceholder": "e.g. Finished settings page, fixed timer bug...",
+    "session.blockers": "Any blockers or pending items?",
+    "session.blockersPlaceholder": "e.g. Need the API endpoint...",
+    "session.cancel": "Cancel",
+    "session.save": "Save Session",
+
+    // Status messages
+    "status.sentTelegram": "Sent to Telegram",
+    "status.sendError": "Failed to send",
+    "status.briefingSent": "Briefing sent",
+    "status.error": "Error",
+    "status.copiedClipboard": "Copied to clipboard (Telegram not configured)",
+    "status.logCopied": "Log copied in Cowork format",
+
+    // Week tab
+    "week.hoursThisWeek": "HOURS THIS WEEK",
+    "week.total": "Total",
+    "week.weeklyPlan": "WEEKLY PLAN",
+
+    // Projects tab
+    "projects.active": "ACTIVE",
+    "projects.blocked": "BLOCKED",
+    "projects.days": "Days",
+    "projects.tasks": "Tasks",
+
+    // Task input
+    "task.placeholder": "+ New task...",
+
+    // Logs tab
+    "logs.title": "SESSION LOG",
+    "logs.copyLast": "Copy last",
+    "logs.empty": "No sessions recorded.",
+    "logs.emptyHint": "Finish your first session to see the log.",
+    "logs.tomorrow": "Tomorrow",
+
+    // Cowork
+    "cowork.title": "Cowork",
+    "cowork.sendBriefing": "Send Briefing",
+    "cowork.exportLog": "Export Log",
+    "cowork.telegramNotConfigured": "Telegram not configured. See",
+    "cowork.and": "and",
+
+    // Login
+    "login.subtitle": "One project per day. Deep focus.",
+    "login.heading": "SIGN IN",
+    "login.syncNote": "Your data syncs across devices",
+    "login.google": "Continue with Google",
+
+    // Footer
+    "footer.tagline": "FOCUSTACK v2.0 · THE MACHINE THAT BUILDS THE MACHINE",
+
+    // Days (short)
+    "days.0": "Sun",
+    "days.1": "Mon",
+    "days.2": "Tue",
+    "days.3": "Wed",
+    "days.4": "Thu",
+    "days.5": "Fri",
+    "days.6": "Sat",
+  },
+
+  es: {
+    "nav.today": "Hoy",
+    "nav.week": "Semana",
+    "nav.projects": "Proyectos",
+    "nav.logs": "Registro",
+
+    "header.signOut": "Salir",
+
+    "timer.focusSession": "SESION DE ENFOQUE",
+    "timer.pomodoro": "POMODORO",
+    "timer.session": "Sesion",
+    "timer.start": "Iniciar",
+    "timer.pause": "Pausa",
+    "timer.end": "Terminar",
+    "timer.reset": "Reset",
+    "timer.running": "En progreso",
+    "timer.paused": "Pausado",
+    "timer.ready": "Listo",
+
+    "today.todayIs": "HOY TOCA:",
+    "today.weekTarget": "sem",
+    "today.switchProject": "Cambiar Proyecto",
+
+    "friction.title": "Cambiar de proyecto?",
+    "friction.youHave": "Tienes",
+    "friction.in": "en",
+    "friction.rule": "La regla: un proyecto por dia. Estas seguro?",
+    "friction.cancel": "Cancelar",
+    "friction.confirm": "Si, cambiar a",
+
+    "session.end": "Terminar Sesion",
+    "session.whatCompleted": "Que completaste hoy?",
+    "session.completedPlaceholder": "Ej: Termine la pagina de settings, arregle el bug del timer...",
+    "session.blockers": "Algun blocker o pendiente?",
+    "session.blockersPlaceholder": "Ej: Necesito el endpoint de la API...",
+    "session.cancel": "Cancelar",
+    "session.save": "Guardar Sesion",
+
+    "status.sentTelegram": "Enviado a Telegram",
+    "status.sendError": "Error al enviar",
+    "status.briefingSent": "Briefing enviado",
+    "status.error": "Error",
+    "status.copiedClipboard": "Copiado al clipboard (Telegram no configurado)",
+    "status.logCopied": "Log copiado en formato Cowork",
+
+    "week.hoursThisWeek": "HORAS ESTA SEMANA",
+    "week.total": "Total",
+    "week.weeklyPlan": "PLAN SEMANAL",
+
+    "projects.active": "ACTIVO",
+    "projects.blocked": "BLOQUEADO",
+    "projects.days": "Dias",
+    "projects.tasks": "Tareas",
+
+    "task.placeholder": "+ Nueva tarea...",
+
+    "logs.title": "REGISTRO DE SESIONES",
+    "logs.copyLast": "Copiar ultimo",
+    "logs.empty": "No hay sesiones registradas.",
+    "logs.emptyHint": "Termina tu primera sesion para ver el registro.",
+    "logs.tomorrow": "Manana",
+
+    "cowork.title": "Cowork",
+    "cowork.sendBriefing": "Enviar Briefing",
+    "cowork.exportLog": "Exportar Log",
+    "cowork.telegramNotConfigured": "Telegram no configurado. Ver",
+    "cowork.and": "y",
+
+    "login.subtitle": "Un proyecto por dia. Deep focus.",
+    "login.heading": "INICIAR SESION",
+    "login.syncNote": "Tus datos se sincronizan entre dispositivos",
+    "login.google": "Continuar con Google",
+
+    "footer.tagline": "FOCUSTACK v2.0 · LA MAQUINA QUE CONSTRUYE LA MAQUINA",
+
+    "days.0": "Dom",
+    "days.1": "Lun",
+    "days.2": "Mar",
+    "days.3": "Mie",
+    "days.4": "Jue",
+    "days.5": "Vie",
+    "days.6": "Sab",
+  },
+} as const;
+
+// ─── TYPES ─────────────────────────────────────────────
+export type Locale = "en" | "es";
+type TranslationKey = keyof (typeof translations)["en"];
+
+// ─── CONTEXT ───────────────────────────────────────────
+interface I18nContextValue {
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+  t: (key: TranslationKey) => string;
+  dateLocale: string;
+}
+
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocaleState] = useState<Locale>("en");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("focustack-locale") as Locale | null;
+    if (saved && (saved === "en" || saved === "es")) {
+      setLocaleState(saved);
+    }
+  }, []);
+
+  const setLocale = (newLocale: Locale) => {
+    setLocaleState(newLocale);
+    localStorage.setItem("focustack-locale", newLocale);
+    document.documentElement.lang = newLocale;
+  };
+
+  const t = (key: TranslationKey): string => {
+    return translations[locale][key] || translations.en[key] || key;
+  };
+
+  const dateLocale = locale === "es" ? "es-ES" : "en-US";
+
+  return (
+    <I18nContext.Provider value={{ locale, setLocale, t, dateLocale }}>
+      {children}
+    </I18nContext.Provider>
+  );
+}
+
+export function useTranslation() {
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error("useTranslation must be used within I18nProvider");
+  return ctx;
+}
