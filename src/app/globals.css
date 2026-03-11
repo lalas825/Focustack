@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary font-mono antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0D0D1A;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1a1a2e;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2a2a3e;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(0, 229, 160, 0.2);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg font-mono text-sm font-semibold
+           transition-all duration-200 cursor-pointer border;
+  }
+
+  .card {
+    @apply bg-bg-surface rounded-xl border border-bg-elevated p-5;
+  }
+
+  .input-base {
+    @apply w-full px-3 py-2 bg-bg-primary border border-bg-elevated rounded-lg
+           text-text-primary text-sm font-mono outline-none
+           focus:border-accent-jantile/30 transition-colors;
+  }
+}
