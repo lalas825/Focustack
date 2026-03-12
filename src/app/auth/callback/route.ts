@@ -8,7 +8,21 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { data } = await supabase.auth.exchangeCodeForSession(code);
+
+    // Check if user's email is on the allowlist
+    if (data?.user?.email) {
+      const { count } = await supabase
+        .from("allowed_emails")
+        .select("*", { count: "exact", head: true })
+        .eq("email", data.user.email);
+
+      if (!count || count === 0) {
+        // Sign out the unauthorized user and redirect to waitlist
+        await supabase.auth.signOut();
+        return NextResponse.redirect(`${origin}/waitlist`);
+      }
+    }
   }
 
   return NextResponse.redirect(`${origin}${next}`);

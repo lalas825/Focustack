@@ -90,6 +90,12 @@ const translations = {
     "login.syncNote": "Your data syncs across devices",
     "login.google": "Continue with Google",
 
+    // Waitlist
+    "waitlist.subtitle": "Invite Only",
+    "waitlist.title": "You're on the waitlist",
+    "waitlist.message": "FocusStack is currently invite-only. We'll let you know when your access is ready.",
+    "waitlist.backToLogin": "Back to login",
+
     // Footer
     "footer.tagline": "FOCUSTACK v2.0 · THE MACHINE THAT BUILDS THE MACHINE",
 
@@ -175,6 +181,11 @@ const translations = {
     "login.heading": "INICIAR SESION",
     "login.syncNote": "Tus datos se sincronizan entre dispositivos",
     "login.google": "Continuar con Google",
+
+    "waitlist.subtitle": "Solo con invitacion",
+    "waitlist.title": "Estas en la lista de espera",
+    "waitlist.message": "FocusStack es solo por invitacion. Te avisaremos cuando tu acceso este listo.",
+    "waitlist.backToLogin": "Volver al login",
 
     "footer.tagline": "FOCUSTACK v2.0 · LA MAQUINA QUE CONSTRUYE LA MAQUINA",
 
