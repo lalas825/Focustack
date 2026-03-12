@@ -36,12 +36,6 @@ export async function loadUserData(userId: string) {
       .limit(100),
   ]);
 
-  // Debug: log any errors
-  if (tasksRes.error) console.error("tasks fetch error:", tasksRes.error);
-  if (hoursRes.error) console.error("hours fetch error:", hoursRes.error);
-  if (logsRes.error) console.error("logs fetch error:", logsRes.error);
-  console.log("loadUserData:", { tasks: tasksRes.data?.length, hours: hoursRes.data?.length, logs: logsRes.data?.length });
-
   // Hydrate tasks store
   if (tasksRes.data) {
     const tasksMap: TasksMap = {};
