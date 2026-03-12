@@ -1,3 +1,4 @@
+import { useScheduleStore } from "@/features/planner/scheduleStore";
 import type { Project } from "@/shared/types";
 
 export const PROJECTS: Project[] = [
@@ -68,6 +69,15 @@ export function getTodayProject(): Project {
     PROJECTS.find((p) => p.days.includes(dayName) && p.status === "active") ??
     PROJECTS[0]
   );
+}
+
+export function getTodayProjects(): Project[] {
+  const schedule = useScheduleStore.getState().schedule;
+  const todayIndex = new Date().getDay();
+  const projectIds = schedule[todayIndex] || [];
+  return projectIds
+    .map((id) => PROJECTS.find((p) => p.id === id))
+    .filter(Boolean) as Project[];
 }
 
 export function getProjectById(id: string): Project | undefined {

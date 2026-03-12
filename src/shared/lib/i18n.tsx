@@ -60,12 +60,20 @@ const translations = {
     "week.hoursThisWeek": "HOURS THIS WEEK",
     "week.total": "Total",
     "week.weeklyPlan": "WEEKLY PLAN",
+    "week.assignProjects": "Assign projects",
+    "week.noProjects": "—",
 
     // Projects tab
     "projects.active": "ACTIVE",
     "projects.blocked": "BLOCKED",
     "projects.days": "Days",
     "projects.tasks": "Tasks",
+    "project.newProject": "NEW PROJECT",
+    "project.name": "Project name",
+    "project.emoji": "Emoji",
+    "project.color": "Color",
+    "project.save": "Create",
+    "project.cancel": "Cancel",
 
     // Task input
     "task.placeholder": "+ New task...",
@@ -178,11 +186,19 @@ const translations = {
     "week.hoursThisWeek": "HORAS ESTA SEMANA",
     "week.total": "Total",
     "week.weeklyPlan": "PLAN SEMANAL",
+    "week.assignProjects": "Asignar proyectos",
+    "week.noProjects": "—",
 
     "projects.active": "ACTIVO",
     "projects.blocked": "BLOQUEADO",
     "projects.days": "Dias",
     "projects.tasks": "Tareas",
+    "project.newProject": "NUEVO PROYECTO",
+    "project.name": "Nombre del proyecto",
+    "project.emoji": "Emoji",
+    "project.color": "Color",
+    "project.save": "Crear",
+    "project.cancel": "Cancelar",
 
     "task.placeholder": "+ Nueva tarea...",
     "task.addTask": "Agregar Tarea",

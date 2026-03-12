@@ -1,22 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { useHoursStore } from "@/features/planner/store";
 import { useTasksStore } from "@/features/projects/store";
+import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
 import { PROJECTS } from "@/features/projects/data/projects";
 import { DAYS } from "@/shared/lib/utils";
 import { ProgressBar } from "@/shared/components/ProgressBar";
 import { useTranslation } from "@/shared/lib/i18n";
 import { TaskInput } from "@/features/projects/components/TaskInput";
 import { TaskList } from "@/features/projects/components/TaskList";
+import { ProjectModal } from "@/features/projects/components/ProjectModal";
 
 export function ProjectsTab() {
   const { t } = useTranslation();
   const { hours } = useHoursStore();
   const { tasks, addTask, toggleTask, deleteTask } = useTasksStore();
+  const customProjects = useCustomProjectsStore((s) => s.projects);
+  const addProject = useCustomProjectsStore((s) => s.addProject);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const allProjects = [...PROJECTS, ...customProjects];
 
   return (
     <div className="space-y-3">
-      {PROJECTS.map((p) => {
+      {allProjects.map((p) => {
         const isActive = p.status === "active";
         const logged = (hours[p.id] || 0) / 3600;
         const projectTasks = tasks[p.id] || [];
@@ -46,7 +54,7 @@ export function ProjectsTab() {
                   </span>
                 </div>
               </div>
-              {isActive && (
+              {isActive && p.targetHours > 0 && (
                 <div className="text-right">
                   <div className="text-xl font-bold text-white">{logged.toFixed(1)}h</div>
                   <div className="text-[10px] text-text-muted">/ {p.targetHours}h</div>
@@ -56,10 +64,16 @@ export function ProjectsTab() {
 
             {isActive && (
               <>
-                <ProgressBar value={logged} max={p.targetHours} color={p.color} className="mb-3" />
+                {p.targetHours > 0 && (
+                  <ProgressBar value={logged} max={p.targetHours} color={p.color} className="mb-3" />
+                )}
                 <div className="text-[11px] text-text-muted mb-2">
-                  {t("projects.days")}:{" "}
-                  {p.days.map((d) => t(`days.${DAYS.indexOf(d)}` as any)).join(", ")} ·
+                  {p.days.length > 0 && (
+                    <>
+                      {t("projects.days")}:{" "}
+                      {p.days.map((d) => t(`days.${DAYS.indexOf(d)}` as any)).join(", ")} ·{" "}
+                    </>
+                  )}
                   {t("projects.tasks")}: {doneTasks}/{projectTasks.length}
                 </div>
                 <TaskInput onAdd={(text, priority, est) => addTask(p.id, text, priority, est)} color={p.color} />
@@ -76,6 +90,20 @@ export function ProjectsTab() {
           </div>
         );
       })}
+
+      {/* + New Project button */}
+      <button
+        onClick={() => setModalOpen(true)}
+        className="card w-full text-center py-4 border-dashed border-bg-elevated hover:border-text-muted transition-colors cursor-pointer"
+      >
+        <span className="text-text-muted text-sm">+ {t("project.newProject")}</span>
+      </button>
+
+      <ProjectModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={(p) => addProject(p.name, p.emoji, p.color)}
+      />
     </div>
   );
 }

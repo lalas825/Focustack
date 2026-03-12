@@ -4,7 +4,11 @@ import { createClient } from "@/lib/supabase/client";
 import { useTasksStore } from "@/features/projects/store";
 import { useHoursStore } from "@/features/planner/store";
 import { useLogsStore } from "@/features/logs/store";
-import type { Task, TasksMap, HoursMap, SessionLog } from "@/shared/types";
+import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
+import { useScheduleStore } from "@/features/planner/scheduleStore";
+import { PROJECTS } from "@/features/projects/data/projects";
+import { DAYS } from "@/shared/lib/utils";
+import type { Task, TasksMap, HoursMap, SessionLog, Project } from "@/shared/types";
 import { getWeekStart } from "@/shared/lib/utils";
 
 export async function loadUserData(userId: string) {
@@ -14,8 +18,8 @@ export async function loadUserData(userId: string) {
   // Migrate localStorage data on first login
   await migrateLocalStorage(userId, supabase);
 
-  // Fetch all 3 tables in parallel
-  const [tasksRes, hoursRes, logsRes] = await Promise.all([
+  // Fetch all 4 tables in parallel
+  const [tasksRes, hoursRes, logsRes, projectsRes, assignmentsRes] = await Promise.all([
     supabase
       .from("tasks")
       .select("*")
@@ -34,6 +38,17 @@ export async function loadUserData(userId: string) {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(100),
+
+    supabase
+      .from("user_projects")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true }),
+
+    supabase
+      .from("daily_assignments")
+      .select("*")
+      .eq("user_id", userId),
   ]);
 
   // Hydrate tasks store
@@ -75,6 +90,53 @@ export async function loadUserData(userId: string) {
       tomorrowProject: row.tomorrow_project,
     }));
     useLogsStore.setState({ logs });
+  }
+
+  // Hydrate custom projects store
+  if (projectsRes.data) {
+    const projects: Project[] = projectsRes.data.map((row) => ({
+      id: row.id,
+      name: row.name,
+      emoji: row.emoji ?? "📁",
+      color: row.color ?? "#7B68EE",
+      targetHours: row.target_hours ?? 0,
+      days: [],
+      status: "active" as const,
+    }));
+    useCustomProjectsStore.setState({ projects });
+  }
+
+  // Hydrate schedule store (daily assignments)
+  if (assignmentsRes.data && assignmentsRes.data.length > 0) {
+    const schedule: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    for (const row of assignmentsRes.data) {
+      schedule[row.day_of_week].push(row.project_id);
+    }
+    useScheduleStore.setState({ schedule, loaded: true });
+  } else {
+    // First login: seed from hardcoded PROJECTS[].days
+    const schedule: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    const seedRows: { user_id: string; day_of_week: number; project_id: string }[] = [];
+
+    for (const project of PROJECTS) {
+      if (project.days.length === 0) continue;
+      for (const dayName of project.days) {
+        const dayIndex = DAYS.indexOf(dayName as typeof DAYS[number]);
+        if (dayIndex === -1) continue;
+        schedule[dayIndex].push(project.id);
+        seedRows.push({ user_id: userId, day_of_week: dayIndex, project_id: project.id });
+      }
+    }
+
+    useScheduleStore.setState({ schedule, loaded: true });
+
+    // Background insert seed rows
+    if (seedRows.length > 0) {
+      supabase
+        .from("daily_assignments")
+        .insert(seedRows)
+        .then(({ error }) => { if (error) console.error("seed assignments:", error); });
+    }
   }
 }
 
