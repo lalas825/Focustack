@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTimerStore } from "@/features/timer/store";
 import { useHoursStore } from "@/features/planner/store";
 import { useTasksStore } from "@/features/projects/store";
@@ -37,6 +37,7 @@ import { TaskList } from "@/features/projects/components/TaskList";
 
 // ─── MAIN PAGE ──────────────────────────────────────
 export default function Dashboard() {
+  const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<"today" | "week" | "projects" | "logs">("today");
 
   const timer = useTimerStore();
@@ -44,6 +45,8 @@ export default function Dashboard() {
   const tasks = useTasksStore();
   const logs = useLogsStore();
   const { t, locale, setLocale, dateLocale } = useTranslation();
+
+  useEffect(() => setMounted(true), []);
 
   const [showFriction, setShowFriction] = useState(false);
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
@@ -129,6 +132,8 @@ export default function Dashboard() {
   };
 
   const todayProject = getTodayProject();
+
+  if (!mounted) return null;
 
   return (
     <div className="min-h-screen relative">
