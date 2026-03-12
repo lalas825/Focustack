@@ -10,25 +10,24 @@ export function useAuth() {
   const loaded = useRef(false);
 
   useEffect(() => {
-    console.log("[FS v2.2] useAuth effect running");
     const supabase = createClient();
 
-    // Initial session check
-    supabase.auth.getUser().then(({ data: { user }, error }) => {
-      console.log("[FS v2.2] getUser result:", { user: user?.email, error });
-      if (user) {
-        setUser({ id: user.id, email: user.email ?? null });
+    // Use getSession (local cookie read) instead of getUser (network call that hangs)
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log("[FS] session:", { user: session?.user?.email, error });
+      if (session?.user) {
+        setUser({ id: session.user.id, email: session.user.email ?? null });
         if (!loaded.current) {
           loaded.current = true;
-          loadUserData(user.id);
+          loadUserData(session.user.id);
         }
       } else {
         setUser(null);
       }
       setLoading(false);
-    }).catch((err) => console.error("useAuth getUser failed:", err));
+    });
 
-    // Listen for auth state changes (fresh logins only)
+    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
