@@ -10,11 +10,12 @@ export function useAuth() {
   const loaded = useRef(false);
 
   useEffect(() => {
+    console.log("[FS v2.2] useAuth effect running");
     const supabase = createClient();
 
     // Initial session check
     supabase.auth.getUser().then(({ data: { user }, error }) => {
-      console.log("useAuth getUser:", { user: user?.email, error });
+      console.log("[FS v2.2] getUser result:", { user: user?.email, error });
       if (user) {
         setUser({ id: user.id, email: user.email ?? null });
         if (!loaded.current) {
