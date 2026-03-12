@@ -46,6 +46,8 @@ export async function loadUserData(userId: string) {
         text: row.text,
         done: row.done,
         createdAt: row.created_at,
+        priority: row.priority ?? "medium",
+        estimationMinutes: row.estimation_minutes ?? null,
       });
     }
     useTasksStore.setState({ tasks: { ...useTasksStore.getState().tasks, ...tasksMap } });

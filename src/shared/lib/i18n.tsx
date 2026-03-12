@@ -69,10 +69,31 @@ const translations = {
 
     // Task input
     "task.placeholder": "+ New task...",
+    "task.addTask": "Add Task",
+    "task.title": "Task title",
+    "task.priority": "Priority",
+    "task.priorityLow": "Low",
+    "task.priorityMedium": "Medium",
+    "task.priorityHigh": "High",
+    "task.estimation": "Estimation",
+    "task.minutes": "min",
+    "task.hours": "hrs",
+    "task.cancel": "Cancel",
+    "task.save": "Save",
+
+    // Dashboard KPIs
+    "kpi.focus": "FOCUS",
+    "kpi.focusDesc": "High priority",
+    "kpi.productivity": "PRODUCTIVITY",
+    "kpi.productivityDesc": "Hours completed",
+    "kpi.velocity": "VELOCITY",
+    "kpi.velocityDesc": "Done today",
+    "kpi.noData": "No data yet",
 
     // Logs tab
     "logs.title": "SESSION LOG",
     "logs.copyLast": "Copy last",
+    "logs.exportCsv": "Export CSV",
     "logs.empty": "No sessions recorded.",
     "logs.emptyHint": "Finish your first session to see the log.",
     "logs.tomorrow": "Tomorrow",
@@ -164,9 +185,30 @@ const translations = {
     "projects.tasks": "Tareas",
 
     "task.placeholder": "+ Nueva tarea...",
+    "task.addTask": "Agregar Tarea",
+    "task.title": "Titulo de la tarea",
+    "task.priority": "Prioridad",
+    "task.priorityLow": "Baja",
+    "task.priorityMedium": "Media",
+    "task.priorityHigh": "Alta",
+    "task.estimation": "Estimacion",
+    "task.minutes": "min",
+    "task.hours": "hrs",
+    "task.cancel": "Cancelar",
+    "task.save": "Guardar",
+
+    // Dashboard KPIs
+    "kpi.focus": "ENFOQUE",
+    "kpi.focusDesc": "Alta prioridad",
+    "kpi.productivity": "PRODUCTIVIDAD",
+    "kpi.productivityDesc": "Horas completadas",
+    "kpi.velocity": "VELOCIDAD",
+    "kpi.velocityDesc": "Hoy completadas",
+    "kpi.noData": "Sin datos aun",
 
     "logs.title": "REGISTRO DE SESIONES",
     "logs.copyLast": "Copiar ultimo",
+    "logs.exportCsv": "Exportar CSV",
     "logs.empty": "No hay sesiones registradas.",
     "logs.emptyHint": "Termina tu primera sesion para ver el registro.",
     "logs.tomorrow": "Manana",

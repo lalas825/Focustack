@@ -1,12 +1,37 @@
 "use client";
 
 import { useLogsStore } from "@/features/logs/store";
+import { useTasksStore } from "@/features/projects/store";
 import { PROJECTS } from "@/features/projects/data/projects";
 import { Btn } from "@/shared/components/Btn";
 import { useTranslation } from "@/shared/lib/i18n";
 
 interface LogsTabProps {
   onExport: () => void;
+}
+
+function exportTasksCsv() {
+  const tasks = useTasksStore.getState().tasks;
+  const rows: string[] = ["Task,Project,Priority,Estimation (min),Status,Created"];
+
+  for (const [projectId, projectTasks] of Object.entries(tasks)) {
+    const proj = PROJECTS.find((p) => p.id === projectId);
+    const projectName = proj ? `${proj.emoji} ${proj.name}` : projectId;
+    for (const t of projectTasks) {
+      const escaped = t.text.replace(/"/g, '""');
+      rows.push(
+        `"${escaped}","${projectName}",${t.priority},${t.estimationMinutes ?? ""},${t.done ? "done" : "pending"},${t.createdAt}`
+      );
+    }
+  }
+
+  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `focustack-tasks-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function LogsTab({ onExport }: LogsTabProps) {
@@ -17,11 +42,16 @@ export function LogsTab({ onExport }: LogsTabProps) {
     <div>
       <div className="flex justify-between items-center mb-5">
         <h3 className="text-sm text-text-secondary font-medium">{t("logs.title")}</h3>
-        {logs.length > 0 && (
-          <Btn color="#00E5A0" onClick={onExport}>
-            {t("logs.copyLast")}
+        <div className="flex gap-2">
+          {logs.length > 0 && (
+            <Btn color="#00E5A0" onClick={onExport}>
+              {t("logs.copyLast")}
+            </Btn>
+          )}
+          <Btn color="#7B68EE" onClick={exportTasksCsv}>
+            {t("logs.exportCsv")}
           </Btn>
-        )}
+        </div>
       </div>
 
       {logs.length === 0 ? (

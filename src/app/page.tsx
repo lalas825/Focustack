@@ -34,6 +34,7 @@ import { Modal } from "@/shared/components/Modal";
 import { ProjectBadge } from "@/shared/components/ProjectBadge";
 import { TaskInput } from "@/features/projects/components/TaskInput";
 import { TaskList } from "@/features/projects/components/TaskList";
+import { DashboardStats } from "@/features/projects/components/DashboardStats";
 
 // ─── MAIN PAGE ──────────────────────────────────────
 export default function Dashboard() {
@@ -201,6 +202,7 @@ export default function Dashboard() {
         {/* ─── TAB CONTENT ─────────────────────── */}
         {tab === "today" && (
           <div className="space-y-5">
+            <DashboardStats />
             <TimerCard onEndSession={handleEndSession} />
 
             <div className="card">
@@ -218,7 +220,7 @@ export default function Dashboard() {
                 color={todayProject.color}
               />
               <div className="mt-4">
-                <TaskInput onAdd={(text) => tasks.addTask(todayProject.id, text)} color={todayProject.color} />
+                <TaskInput onAdd={(text, priority, est) => tasks.addTask(todayProject.id, text, priority, est)} color={todayProject.color} />
               </div>
               <TaskList
                 tasks={tasks.tasks[todayProject.id] || []}

@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Task, TasksMap } from "@/shared/types";
+import type { Task, TasksMap, Priority } from "@/shared/types";
 import { PROJECTS } from "@/features/projects/data/projects";
 import { createClient } from "@/lib/supabase/client";
 
@@ -13,7 +13,7 @@ function defaultTasks(): TasksMap {
 
 interface TasksState {
   tasks: TasksMap;
-  addTask: (projectId: string, text: string) => void;
+  addTask: (projectId: string, text: string, priority?: Priority, estimationMinutes?: number | null) => void;
   toggleTask: (projectId: string, taskId: string) => void;
   deleteTask: (projectId: string, taskId: string) => void;
 }
@@ -27,11 +27,11 @@ async function getUserId(): Promise<string | null> {
 export const useTasksStore = create<TasksState>((set, get) => ({
   tasks: defaultTasks(),
 
-  addTask: (projectId, text) => {
+  addTask: (projectId, text, priority = "medium", estimationMinutes = null) => {
     if (!text.trim()) return;
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
-    const newTask: Task = { id, text: text.trim(), done: false, createdAt };
+    const newTask: Task = { id, text: text.trim(), done: false, createdAt, priority, estimationMinutes: estimationMinutes ?? null };
 
     const updated = { ...get().tasks };
     updated[projectId] = [...(updated[projectId] || []), newTask];
@@ -42,7 +42,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       if (!userId) return;
       createClient()
         .from("tasks")
-        .insert({ id, user_id: userId, project_id: projectId, text: newTask.text, done: false, created_at: createdAt })
+        .insert({ id, user_id: userId, project_id: projectId, text: newTask.text, done: false, created_at: createdAt, priority, estimation_minutes: estimationMinutes ?? null })
         .then(({ error }) => { if (error) console.error("tasks insert:", error); });
     });
   },
@@ -86,3 +86,30 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     });
   },
 }));
+
+// ─── SELECTORS (derived KPIs) ──────────────────────
+function allTasks(state: TasksState): Task[] {
+  return Object.values(state.tasks).flat();
+}
+
+/** KPI 1 – Enfoque: high-priority completion ratio */
+export const selectFocusRate = (state: TasksState) => {
+  const all = allTasks(state);
+  const high = all.filter((t) => t.priority === "high");
+  const highDone = high.filter((t) => t.done);
+  return { done: highDone.length, total: high.length, rate: high.length > 0 ? Math.round((highDone.length / high.length) * 100) : 0 };
+};
+
+/** KPI 2 – Productividad: estimated hours from completed tasks */
+export const selectProductivityHours = (state: TasksState) => {
+  const completed = allTasks(state).filter((t) => t.done);
+  const totalMin = completed.reduce((sum, t) => sum + (t.estimationMinutes ?? 0), 0);
+  return { hours: Math.floor(totalMin / 60), minutes: totalMin % 60, totalMinutes: totalMin };
+};
+
+/** KPI 3 – Velocidad: tasks completed in the last 24h */
+export const selectVelocityToday = (state: TasksState) => {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const recent = allTasks(state).filter((t) => t.done && t.createdAt >= cutoff);
+  return recent.length;
+};

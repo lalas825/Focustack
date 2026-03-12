@@ -2,41 +2,33 @@
 
 import { useState } from "react";
 import { useTranslation } from "@/shared/lib/i18n";
+import { TaskModal } from "./TaskModal";
+import type { Priority } from "@/shared/types";
 
 interface TaskInputProps {
-  onAdd: (text: string) => void;
+  onAdd: (text: string, priority?: Priority, estimationMinutes?: number | null) => void;
   color: string;
 }
 
 export function TaskInput({ onAdd, color }: TaskInputProps) {
   const { t } = useTranslation();
-  const [text, setText] = useState("");
-  const handleSubmit = () => {
-    if (text.trim()) {
-      onAdd(text);
-      setText("");
-    }
-  };
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
-    <div className="flex gap-2">
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-        placeholder={t("task.placeholder")}
-        className="input-base flex-1"
-      />
+    <>
       <button
-        onClick={handleSubmit}
-        className="px-3 py-2 rounded-lg border text-sm"
-        style={{
-          borderColor: color + "30",
-          backgroundColor: color + "10",
-          color,
-        }}
+        onClick={() => setModalOpen(true)}
+        className="input-base w-full text-left text-secondary hover:text-primary transition-colors"
       >
-        +
+        {t("task.placeholder")}
       </button>
-    </div>
+
+      <TaskModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={(task) => onAdd(task.text, task.priority, task.estimationMinutes)}
+        color={color}
+      />
+    </>
   );
 }

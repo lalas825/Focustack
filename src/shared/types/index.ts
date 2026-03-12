@@ -21,11 +21,16 @@ export const ProjectSchema = z.object({
 export type Project = z.infer<typeof ProjectSchema>;
 
 // ─── TASK ───────────────────────────────────────────
+export const Priority = z.enum(["low", "medium", "high"]);
+export type Priority = z.infer<typeof Priority>;
+
 export const TaskSchema = z.object({
   id: z.string(),
   text: z.string(),
   done: z.boolean(),
   createdAt: z.string(),
+  priority: Priority.default("medium"),
+  estimationMinutes: z.number().nullable().default(null),
 });
 export type Task = z.infer<typeof TaskSchema>;
 

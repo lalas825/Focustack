@@ -62,7 +62,7 @@ export function ProjectsTab() {
                   {p.days.map((d) => t(`days.${DAYS.indexOf(d)}` as any)).join(", ")} ·
                   {t("projects.tasks")}: {doneTasks}/{projectTasks.length}
                 </div>
-                <TaskInput onAdd={(text) => addTask(p.id, text)} color={p.color} />
+                <TaskInput onAdd={(text, priority, est) => addTask(p.id, text, priority, est)} color={p.color} />
                 <TaskList
                   tasks={projectTasks}
                   projectId={p.id}
