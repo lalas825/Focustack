@@ -12,22 +12,18 @@ export function useAuth() {
   useEffect(() => {
     const supabase = createClient();
 
-    // Rely solely on onAuthStateChange — getSession/getUser hang on client
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[FS] auth event:", event, session?.user?.email);
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser({ id: session.user.id, email: session.user.email ?? null });
         if (!loaded.current) {
           loaded.current = true;
-          console.log("[FS] calling loadUserData...");
-          try {
-            await loadUserData(session.user.id);
-            console.log("[FS] loadUserData completed");
-          } catch (err) {
-            console.error("[FS] loadUserData failed:", err);
-          }
+          // setTimeout breaks out of the onAuthStateChange lock
+          // so loadUserData's Supabase calls don't deadlock
+          setTimeout(() => {
+            loadUserData(session.user.id).catch(console.error);
+          }, 0);
         }
       } else {
         setUser(null);
