@@ -1,21 +1,32 @@
 "use client";
 
-import {
-  useTasksStore,
-  selectFocusRate,
-  selectProductivityHours,
-  selectVelocityToday,
-} from "@/features/projects/store";
+import { useTasksStore } from "@/features/projects/store";
 import { ProgressBar } from "@/shared/components/ProgressBar";
 import { useTranslation } from "@/shared/lib/i18n";
 
 export function DashboardStats() {
   const { t } = useTranslation();
-  const focus = useTasksStore(selectFocusRate);
-  const productivity = useTasksStore(selectProductivityHours);
-  const velocity = useTasksStore(selectVelocityToday);
+  const tasks = useTasksStore((s) => s.tasks);
 
-  const hasData = focus.total > 0 || productivity.totalMinutes > 0 || velocity > 0;
+  // Compute KPIs inline from the tasks map (avoids object-returning selectors)
+  const all = Object.values(tasks).flat();
+
+  // KPI 1: Enfoque — high priority completion ratio
+  const high = all.filter((t) => t.priority === "high");
+  const highDone = high.filter((t) => t.done);
+  const focusRate = high.length > 0 ? Math.round((highDone.length / high.length) * 100) : 0;
+
+  // KPI 2: Productividad — estimated hours from completed tasks
+  const completed = all.filter((t) => t.done);
+  const totalMin = completed.reduce((sum, t) => sum + (t.estimationMinutes ?? 0), 0);
+  const prodHours = Math.floor(totalMin / 60);
+  const prodMins = totalMin % 60;
+
+  // KPI 3: Velocidad — tasks completed in last 24h
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const velocity = all.filter((t) => t.done && t.createdAt >= cutoff).length;
+
+  const hasData = high.length > 0 || totalMin > 0 || velocity > 0;
 
   if (!hasData) {
     return (
@@ -27,36 +38,36 @@ export function DashboardStats() {
 
   return (
     <div className="grid grid-cols-3 gap-3 mb-5">
-      {/* KPI 1: Enfoque — High priority completion */}
+      {/* KPI 1: Enfoque */}
       <div className="card">
         <p className="text-[10px] text-text-muted tracking-widest mb-1">
           {t("kpi.focus")}
         </p>
         <p className="text-2xl font-bold text-text-primary">
-          {focus.rate}%
+          {focusRate}%
         </p>
         <div className="mt-2">
-          <ProgressBar value={focus.done} max={Math.max(focus.total, 1)} color="#FF6B6B" />
+          <ProgressBar value={highDone.length} max={Math.max(high.length, 1)} color="#FF6B6B" />
         </div>
         <p className="text-[10px] text-text-dark mt-1">
-          {t("kpi.focusDesc")} · {focus.done}/{focus.total}
+          {t("kpi.focusDesc")} · {highDone.length}/{high.length}
         </p>
       </div>
 
-      {/* KPI 2: Productividad — Hours from completed tasks */}
+      {/* KPI 2: Productividad */}
       <div className="card">
         <p className="text-[10px] text-text-muted tracking-widest mb-1">
           {t("kpi.productivity")}
         </p>
         <p className="text-2xl font-bold text-text-primary">
-          {productivity.hours > 0 && `${productivity.hours}h `}{productivity.minutes}m
+          {prodHours > 0 ? `${prodHours}h ` : ""}{prodMins}m
         </p>
         <p className="text-[10px] text-text-dark mt-3">
           {t("kpi.productivityDesc")}
         </p>
       </div>
 
-      {/* KPI 3: Velocidad — Tasks done in last 24h */}
+      {/* KPI 3: Velocidad */}
       <div className="card">
         <p className="text-[10px] text-text-muted tracking-widest mb-1">
           {t("kpi.velocity")}

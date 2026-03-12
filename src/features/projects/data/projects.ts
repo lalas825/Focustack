@@ -35,7 +35,7 @@ export const PROJECTS: Project[] = [
     color: "#7B68EE",
     targetHours: 0,
     days: [],
-    status: "blocked",
+    status: "active",
   },
   {
     id: "reelai",
@@ -44,7 +44,7 @@ export const PROJECTS: Project[] = [
     color: "#FF69B4",
     targetHours: 0,
     days: [],
-    status: "blocked",
+    status: "active",
   },
   {
     id: "mnqbot",
@@ -53,7 +53,7 @@ export const PROJECTS: Project[] = [
     color: "#4ECDC4",
     targetHours: 0,
     days: [],
-    status: "blocked",
+    status: "active",
   },
 ];
 
