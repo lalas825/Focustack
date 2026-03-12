@@ -13,7 +13,8 @@ export function useAuth() {
     const supabase = createClient();
 
     // Initial session check
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      console.log("useAuth getUser:", { user: user?.email, error });
       if (user) {
         setUser({ id: user.id, email: user.email ?? null });
         if (!loaded.current) {
@@ -24,7 +25,7 @@ export function useAuth() {
         setUser(null);
       }
       setLoading(false);
-    });
+    }).catch((err) => console.error("useAuth getUser failed:", err));
 
     // Listen for auth state changes (fresh logins only)
     const {
