@@ -7,7 +7,7 @@ import { useTasksStore } from "@/features/projects/store";
 import { useLogsStore } from "@/features/logs/store";
 import { getTodayProject, getTomorrowProject } from "@/features/projects/data/projects";
 import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
-import { formatTime, formatHours, getTodayES, DAYS_ES } from "@/shared/lib/utils";
+import { formatTime, formatHours } from "@/shared/lib/utils";
 import {
   sendTelegram,
   isTelegramConfigured,
@@ -88,7 +88,7 @@ export default function Dashboard() {
     const tomorrow = getTomorrowProject();
     const log: SessionLog = {
       date: today.toISOString().split("T")[0],
-      day: DAYS_ES[today.getDay()],
+      day: t(`days.${today.getDay()}` as any),
       projectId: timer.project.id,
       projectName: `${timer.project.emoji} ${timer.project.name}`,
       hoursLogged: (hours.hours[timer.project.id] || 0) / 3600,
@@ -150,7 +150,7 @@ export default function Dashboard() {
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">FOCUSTACK</h1>
               <p className="text-xs text-text-muted mt-1 tracking-[2px] uppercase">
-                {getTodayES()} ·{" "}
+                {t(`days.${new Date().getDay()}` as any)} ·{" "}
                 {new Date().toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
