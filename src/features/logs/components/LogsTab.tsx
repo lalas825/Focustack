@@ -2,7 +2,7 @@
 
 import { useLogsStore } from "@/features/logs/store";
 import { useTasksStore } from "@/features/projects/store";
-import { PROJECTS } from "@/features/projects/data/projects";
+import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
 import { Btn } from "@/shared/components/Btn";
 import { useTranslation } from "@/shared/lib/i18n";
 
@@ -12,10 +12,11 @@ interface LogsTabProps {
 
 function exportTasksCsv() {
   const tasks = useTasksStore.getState().tasks;
+  const projects = useCustomProjectsStore.getState().projects;
   const rows: string[] = ["Task,Project,Priority,Estimation (min),Status,Created"];
 
   for (const [projectId, projectTasks] of Object.entries(tasks)) {
-    const proj = PROJECTS.find((p) => p.id === projectId);
+    const proj = projects.find((p) => p.id === projectId);
     const projectName = proj ? `${proj.emoji} ${proj.name}` : projectId;
     for (const t of projectTasks) {
       const escaped = t.text.replace(/"/g, '""');
@@ -37,6 +38,7 @@ function exportTasksCsv() {
 export function LogsTab({ onExport }: LogsTabProps) {
   const { t } = useTranslation();
   const { logs } = useLogsStore();
+  const customProjects = useCustomProjectsStore((s) => s.projects);
 
   return (
     <div>
@@ -64,7 +66,7 @@ export function LogsTab({ onExport }: LogsTabProps) {
       ) : (
         <div className="space-y-2">
           {logs.map((log, i) => {
-            const proj = PROJECTS.find((p) => p.id === log.projectId);
+            const proj = customProjects.find((p) => p.id === log.projectId);
             return (
               <div
                 key={i}

@@ -5,11 +5,8 @@ import { useTimerStore } from "@/features/timer/store";
 import { useHoursStore } from "@/features/planner/store";
 import { useTasksStore } from "@/features/projects/store";
 import { useLogsStore } from "@/features/logs/store";
-import {
-  ACTIVE_PROJECTS,
-  getTodayProject,
-  getTomorrowProject,
-} from "@/features/projects/data/projects";
+import { getTodayProject, getTomorrowProject } from "@/features/projects/data/projects";
+import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
 import { formatTime, formatHours, getTodayES, DAYS_ES } from "@/shared/lib/utils";
 import {
   sendTelegram,
@@ -46,6 +43,7 @@ export default function Dashboard() {
   const tasks = useTasksStore();
   const logs = useLogsStore();
   const { t, locale, setLocale, dateLocale } = useTranslation();
+  const customProjects = useCustomProjectsStore((s) => s.projects);
 
   useEffect(() => setMounted(true), []);
 
@@ -238,7 +236,7 @@ export default function Dashboard() {
                 {t("today.switchProject")}
               </div>
               <div className="flex gap-1.5 flex-wrap">
-                {ACTIVE_PROJECTS.map((p) => (
+                {customProjects.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleSwitchProject(p)}

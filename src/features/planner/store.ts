@@ -2,16 +2,9 @@
 
 import { create } from "zustand";
 import type { HoursMap } from "@/shared/types";
-import { PROJECTS } from "@/features/projects/data/projects";
 import { getWeekStart } from "@/shared/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { syncToSupabaseNotifyOnly } from "@/shared/lib/supabase-sync";
-
-function defaultHours(): HoursMap {
-  const map: HoursMap = {};
-  PROJECTS.forEach((p) => (map[p.id] = 0));
-  return map;
-}
 
 interface HoursState {
   hours: HoursMap;
@@ -26,7 +19,7 @@ async function getUserId(): Promise<string | null> {
 }
 
 export const useHoursStore = create<HoursState>((set, get) => ({
-  hours: defaultHours(),
+  hours: {},
   weekStart: getWeekStart(),
 
   addSeconds: (projectId, seconds) => {
@@ -35,7 +28,7 @@ export const useHoursStore = create<HoursState>((set, get) => ({
 
     // Auto-reset if new week
     if (state.weekStart !== currentWeek) {
-      set({ hours: defaultHours(), weekStart: currentWeek });
+      set({ hours: {}, weekStart: currentWeek });
     }
 
     const updated = { ...get().hours };

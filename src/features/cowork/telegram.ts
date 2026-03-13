@@ -1,6 +1,6 @@
 import type { SessionLog } from "@/shared/types";
 import type { HoursMap } from "@/shared/types";
-import { ACTIVE_PROJECTS, getTodayProject, getTomorrowProject } from "@/features/projects/data/projects";
+import { getAllProjects, getTodayProject, getTomorrowProject } from "@/features/projects/data/projects";
 import { formatHours, getTodayES } from "@/shared/lib/utils";
 
 // ─── TELEGRAM API ───────────────────────────────────
@@ -59,7 +59,8 @@ export function generateBriefing(
     ? `${lastLog.completed || "Sin registro de ultima sesion."}`
     : "Primera sesion — revisar GitHub para ultimo commit.";
 
-  const weekHours = ACTIVE_PROJECTS.map(
+  const allProjects = getAllProjects();
+  const weekHours = allProjects.map(
     (p) => `${p.emoji} ${p.name}: ${formatHours(hours[p.id] || 0)}h / ${p.targetHours}h`
   ).join("\n");
 

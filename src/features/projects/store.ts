@@ -2,15 +2,8 @@
 
 import { create } from "zustand";
 import type { Task, TasksMap, Priority } from "@/shared/types";
-import { PROJECTS } from "@/features/projects/data/projects";
 import { createClient } from "@/lib/supabase/client";
 import { syncToSupabase } from "@/shared/lib/supabase-sync";
-
-function defaultTasks(): TasksMap {
-  const map: TasksMap = {};
-  PROJECTS.forEach((p) => (map[p.id] = []));
-  return map;
-}
 
 interface TasksState {
   tasks: TasksMap;
@@ -26,7 +19,7 @@ async function getUserId(): Promise<string | null> {
 }
 
 export const useTasksStore = create<TasksState>((set, get) => ({
-  tasks: defaultTasks(),
+  tasks: {},
 
   addTask: (projectId, text, priority = "medium", estimationMinutes = null) => {
     if (!text.trim()) return;

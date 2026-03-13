@@ -6,8 +6,6 @@ import { useHoursStore } from "@/features/planner/store";
 import { useLogsStore } from "@/features/logs/store";
 import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
 import { useScheduleStore } from "@/features/planner/scheduleStore";
-import { PROJECTS } from "@/features/projects/data/projects";
-import { DAYS } from "@/shared/lib/utils";
 import type { Task, TasksMap, HoursMap, SessionLog, Project } from "@/shared/types";
 import { getWeekStart } from "@/shared/lib/utils";
 import { resetAllStores } from "@/shared/lib/resetStores";
@@ -111,37 +109,13 @@ export async function loadUserData(userId: string) {
   }
 
   // Hydrate schedule store (daily assignments)
-  if (assignmentsRes.data && assignmentsRes.data.length > 0) {
-    const schedule: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+  const schedule: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+  if (assignmentsRes.data) {
     for (const row of assignmentsRes.data) {
       schedule[row.day_of_week].push(row.project_id);
     }
-    useScheduleStore.setState({ schedule, loaded: true });
-  } else {
-    // First login: seed from hardcoded PROJECTS[].days
-    const schedule: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
-    const seedRows: { user_id: string; day_of_week: number; project_id: string }[] = [];
-
-    for (const project of PROJECTS) {
-      if (project.days.length === 0) continue;
-      for (const dayName of project.days) {
-        const dayIndex = DAYS.indexOf(dayName as typeof DAYS[number]);
-        if (dayIndex === -1) continue;
-        schedule[dayIndex].push(project.id);
-        seedRows.push({ user_id: userId, day_of_week: dayIndex, project_id: project.id });
-      }
-    }
-
-    useScheduleStore.setState({ schedule, loaded: true });
-
-    // Background insert seed rows
-    if (seedRows.length > 0) {
-      supabase
-        .from("daily_assignments")
-        .insert(seedRows)
-        .then(({ error }) => { if (error) console.error("seed assignments:", error); });
-    }
   }
+  useScheduleStore.setState({ schedule, loaded: true });
 }
 
 // One-time migration of localStorage data to Supabase

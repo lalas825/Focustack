@@ -3,18 +3,15 @@
 import { useState } from "react";
 import { useHoursStore } from "@/features/planner/store";
 import { useScheduleStore } from "@/features/planner/scheduleStore";
-import { PROJECTS, ACTIVE_PROJECTS } from "@/features/projects/data/projects";
 import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
+import { getProjectById } from "@/features/projects/data/projects";
 import { getToday, DAYS } from "@/shared/lib/utils";
 import { ProgressBar } from "@/shared/components/ProgressBar";
 import { useTranslation } from "@/shared/lib/i18n";
 import { DayPopover } from "./DayPopover";
+import type { Project } from "@/shared/types";
 
 const MAX_CHIPS = 3;
-
-function getProjectById(id: string, customProjects: typeof PROJECTS) {
-  return PROJECTS.find((p) => p.id === id) || customProjects.find((p) => p.id === id);
-}
 
 export function WeekTab() {
   const { t } = useTranslation();
@@ -24,8 +21,8 @@ export function WeekTab() {
   const customProjects = useCustomProjectsStore((s) => s.projects);
   const [openDay, setOpenDay] = useState<number | null>(null);
 
-  // Merge all active projects for hours display
-  const allActive = [...ACTIVE_PROJECTS, ...customProjects];
+  // Total target from all projects
+  const totalTarget = customProjects.reduce((sum, p) => sum + p.targetHours, 0);
 
   return (
     <div className="space-y-5">
@@ -34,7 +31,7 @@ export function WeekTab() {
         <h3 className="text-sm text-text-secondary font-medium mb-5">
           {t("week.hoursThisWeek")}
         </h3>
-        {allActive.filter((p) => p.targetHours > 0).map((p) => {
+        {customProjects.filter((p) => p.targetHours > 0).map((p) => {
           const logged = (hours[p.id] || 0) / 3600;
           return (
             <div key={p.id} className="mb-4">
@@ -56,7 +53,7 @@ export function WeekTab() {
         <div className="mt-5 pt-4 border-t border-bg-elevated flex justify-between">
           <span className="text-sm text-text-secondary">{t("week.total")}</span>
           <span className="text-sm text-white font-semibold">
-            {(Object.values(hours).reduce((a, b) => a + b, 0) / 3600).toFixed(1)}h / 30h
+            {(Object.values(hours).reduce((a, b) => a + b, 0) / 3600).toFixed(1)}h{totalTarget > 0 ? ` / ${totalTarget}h` : ""}
           </span>
         </div>
       </div>
@@ -69,8 +66,8 @@ export function WeekTab() {
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
           {DAYS.map((day, i) => {
             const dayProjects = (schedule[i] || [])
-              .map((id) => getProjectById(id, customProjects))
-              .filter(Boolean) as typeof PROJECTS;
+              .map((id) => getProjectById(id))
+              .filter(Boolean) as Project[];
             const isToday = day === getToday();
             const firstColor = dayProjects[0]?.color || "#555";
             const overflow = dayProjects.length > MAX_CHIPS ? dayProjects.length - MAX_CHIPS : 0;

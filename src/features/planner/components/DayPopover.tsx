@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { PROJECTS } from "@/features/projects/data/projects";
 import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
 import { useTranslation } from "@/shared/lib/i18n";
 
@@ -16,7 +15,6 @@ export function DayPopover({ dayIndex, assigned, onToggle, onClose }: DayPopover
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const customProjects = useCustomProjectsStore((s) => s.projects);
-  const allProjects = [...PROJECTS.filter((p) => p.status === "active"), ...customProjects];
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -41,7 +39,7 @@ export function DayPopover({ dayIndex, assigned, onToggle, onClose }: DayPopover
       <p className="text-[10px] text-text-muted px-2 py-1 tracking-widest">
         {t("week.assignProjects")}
       </p>
-      {allProjects.map((p) => {
+      {customProjects.map((p) => {
         const isAssigned = assigned.includes(p.id);
         return (
           <button

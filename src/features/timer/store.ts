@@ -3,13 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Project } from "@/shared/types";
-import { PROJECTS, getTodayProject } from "@/features/projects/data/projects";
+import { EMPTY_PROJECT } from "@/features/projects/data/projects";
 import { persistStore } from "@/shared/lib/store-utils";
-
-// Default to Jantile as the primary project, fallback to schedule
-function getInitialProject(): Project {
-  return PROJECTS.find((p) => p.id === "jantile") ?? getTodayProject();
-}
 
 interface TimerState {
   project: Project;
@@ -30,7 +25,7 @@ interface TimerState {
 export const useTimerStore = create<TimerState>()(
   persist(
     (set, get) => ({
-      project: getInitialProject(),
+      project: EMPTY_PROJECT,
       seconds: 0,
       running: false,
       pomodoroMode: null,

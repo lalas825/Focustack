@@ -1,74 +1,25 @@
 import { useScheduleStore } from "@/features/planner/scheduleStore";
+import { useCustomProjectsStore } from "@/features/projects/customProjectsStore";
 import type { Project } from "@/shared/types";
 
-export const PROJECTS: Project[] = [
-  {
-    id: "jantile",
-    name: "Jantile Tracker",
-    emoji: "🏗️",
-    color: "#00E5A0",
-    targetHours: 14,
-    days: ["Monday", "Wednesday", "Friday", "Sunday"],
-    status: "active",
-  },
-  {
-    id: "velora",
-    name: "Velora",
-    emoji: "🎬",
-    color: "#FF6B6B",
-    targetHours: 10,
-    days: ["Tuesday", "Thursday"],
-    status: "active",
-  },
-  {
-    id: "hustleflow",
-    name: "HustleFlow",
-    emoji: "⚡",
-    color: "#FFD93D",
-    targetHours: 6,
-    days: ["Saturday"],
-    status: "active",
-  },
-  {
-    id: "focustack",
-    name: "Focustack",
-    emoji: "🧪",
-    color: "#7B68EE",
-    targetHours: 0,
-    days: [],
-    status: "active",
-  },
-  {
-    id: "reelai",
-    name: "ReelAI",
-    emoji: "🔮",
-    color: "#FF69B4",
-    targetHours: 0,
-    days: [],
-    status: "active",
-  },
-  {
-    id: "mnqbot",
-    name: "MNQ Bot",
-    emoji: "📈",
-    color: "#4ECDC4",
-    targetHours: 0,
-    days: [],
-    status: "active",
-  },
-];
+/** Placeholder shown when no projects exist yet */
+export const EMPTY_PROJECT: Project = {
+  id: "",
+  name: "No Project",
+  emoji: "📁",
+  color: "#555",
+  targetHours: 0,
+  days: [],
+  status: "active",
+};
 
-export const ACTIVE_PROJECTS = PROJECTS.filter((p) => p.status === "active");
+/** All user projects from Supabase (via customProjectsStore) */
+export function getAllProjects(): Project[] {
+  return useCustomProjectsStore.getState().projects;
+}
 
-export function getTodayProject(): Project {
-  const today = new Date().getDay();
-  const dayName = [
-    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
-  ][today] as Project["days"][number];
-  return (
-    PROJECTS.find((p) => p.days.includes(dayName) && p.status === "active") ??
-    PROJECTS[0]
-  );
+export function getProjectById(id: string): Project | undefined {
+  return getAllProjects().find((p) => p.id === id);
 }
 
 export function getTodayProjects(): Project[] {
@@ -76,19 +27,23 @@ export function getTodayProjects(): Project[] {
   const todayIndex = new Date().getDay();
   const projectIds = schedule[todayIndex] || [];
   return projectIds
-    .map((id) => PROJECTS.find((p) => p.id === id))
+    .map((id) => getProjectById(id))
     .filter(Boolean) as Project[];
 }
 
-export function getProjectById(id: string): Project | undefined {
-  return PROJECTS.find((p) => p.id === id);
+export function getTodayProject(): Project {
+  const today = getTodayProjects();
+  if (today.length > 0) return today[0];
+  const all = getAllProjects();
+  return all[0] ?? EMPTY_PROJECT;
 }
 
 export function getTomorrowProject(): Project | undefined {
+  const schedule = useScheduleStore.getState().schedule;
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const dayName = [
-    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
-  ][tomorrow.getDay()] as Project["days"][number];
-  return PROJECTS.find((p) => p.days.includes(dayName) && p.status === "active");
+  const tomorrowIndex = tomorrow.getDay();
+  const projectIds = schedule[tomorrowIndex] || [];
+  if (projectIds.length === 0) return undefined;
+  return getProjectById(projectIds[0]);
 }
