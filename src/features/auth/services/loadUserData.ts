@@ -103,7 +103,7 @@ export async function loadUserData(userId: string) {
       color: row.color ?? "#7B68EE",
       targetHours: row.target_hours ?? 0,
       days: [],
-      status: "active" as const,
+      status: (row.status === "completed" ? "completed" : "active") as Project["status"],
     }));
     useCustomProjectsStore.setState({ projects });
   }

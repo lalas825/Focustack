@@ -8,6 +8,8 @@ import { syncToSupabase } from "@/shared/lib/supabase-sync";
 interface CustomProjectsState {
   projects: Project[];
   addProject: (name: string, emoji: string, color: string) => void;
+  updateProject: (id: string, fields: { name?: string; emoji?: string; color?: string; targetHours?: number }) => void;
+  completeProject: (id: string) => void;
   removeProject: (id: string) => void;
 }
 
@@ -42,6 +44,49 @@ export const useCustomProjectsStore = create<CustomProjectsState>((set, get) => 
         rollbackState: snapshot,
         restore: (s) => set({ projects: s }),
         errorKey: "error.projectAdd",
+      });
+    });
+  },
+
+  updateProject: (id, fields) => {
+    const snapshot = [...get().projects];
+    set({
+      projects: snapshot.map((p) =>
+        p.id === id ? { ...p, ...fields } : p
+      ),
+    });
+
+    getUserId().then((userId) => {
+      if (!userId) return;
+      const dbFields: Record<string, unknown> = {};
+      if (fields.name !== undefined) dbFields.name = fields.name;
+      if (fields.emoji !== undefined) dbFields.emoji = fields.emoji;
+      if (fields.color !== undefined) dbFields.color = fields.color;
+      if (fields.targetHours !== undefined) dbFields.target_hours = fields.targetHours;
+      syncToSupabase({
+        op: () => createClient().from("user_projects").update(dbFields).eq("id", id).eq("user_id", userId),
+        rollbackState: snapshot,
+        restore: (s) => set({ projects: s }),
+        errorKey: "error.projectUpdate",
+      });
+    });
+  },
+
+  completeProject: (id) => {
+    const snapshot = [...get().projects];
+    set({
+      projects: snapshot.map((p) =>
+        p.id === id ? { ...p, status: "completed" as const } : p
+      ),
+    });
+
+    getUserId().then((userId) => {
+      if (!userId) return;
+      syncToSupabase({
+        op: () => createClient().from("user_projects").update({ status: "completed" }).eq("id", id).eq("user_id", userId),
+        rollbackState: snapshot,
+        restore: (s) => set({ projects: s }),
+        errorKey: "error.projectComplete",
       });
     });
   },

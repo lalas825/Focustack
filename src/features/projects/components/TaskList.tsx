@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslation } from "@/shared/lib/i18n";
+
 interface TaskListProps {
   tasks: { id: string; text: string; done: boolean }[];
   projectId: string;
@@ -8,13 +13,17 @@ interface TaskListProps {
 }
 
 export function TaskList({ tasks, projectId, color, onToggle, onDelete, limit }: TaskListProps) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+
   const pending = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
-  const show = limit
-    ? [...pending, ...done.slice(0, Math.max(0, limit - pending.length))]
-    : [...pending, ...done];
+  const all = [...pending, ...done];
 
-  if (show.length === 0) return null;
+  const hasMore = limit && all.length > limit;
+  const show = expanded || !hasMore ? all : all.slice(0, limit);
+
+  if (all.length === 0) return null;
 
   return (
     <div className="mt-3">
@@ -49,6 +58,18 @@ export function TaskList({ tasks, projectId, color, onToggle, onDelete, limit }:
           </button>
         </div>
       ))}
+
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full text-center py-2 text-[11px] transition-colors hover:text-text-secondary"
+          style={{ color: expanded ? "#888" : color }}
+        >
+          {expanded
+            ? t("project.collapse")
+            : `${t("project.showAll")} (${all.length})`}
+        </button>
+      )}
     </div>
   );
 }

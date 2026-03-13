@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // ─── PROJECT ────────────────────────────────────────
-export const ProjectStatus = z.enum(["active", "blocked"]);
+export const ProjectStatus = z.enum(["active", "blocked", "completed"]);
 export type ProjectStatus = z.infer<typeof ProjectStatus>;
 
 export const DayName = z.enum([

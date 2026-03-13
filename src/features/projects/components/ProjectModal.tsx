@@ -21,30 +21,34 @@ const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
 interface ProjectModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (project: { name: string; emoji: string; color: string }) => void;
+  onSave: (project: { name: string; emoji: string; color: string; targetHours: number }) => void;
+  initialValues?: { name: string; emoji: string; color: string; targetHours: number };
 }
 
-export function ProjectModal({ open, onClose, onSave }: ProjectModalProps) {
+export function ProjectModal({ open, onClose, onSave, initialValues }: ProjectModalProps) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("📁");
   const [color, setColor] = useState("#7B68EE");
+  const [targetHours, setTargetHours] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isEdit = !!initialValues;
 
   useEffect(() => {
     if (open) {
-      setName("");
-      setEmoji("📁");
-      setColor("#7B68EE");
+      setName(initialValues?.name ?? "");
+      setEmoji(initialValues?.emoji ?? "📁");
+      setColor(initialValues?.color ?? "#7B68EE");
+      setTargetHours(initialValues?.targetHours ?? 0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [open]);
+  }, [open, initialValues]);
 
   if (!open) return null;
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave({ name: name.trim(), emoji, color });
+    onSave({ name: name.trim(), emoji, color, targetHours });
     onClose();
   };
 
@@ -62,7 +66,7 @@ export function ProjectModal({ open, onClose, onSave }: ProjectModalProps) {
     <Modal>
       <div onKeyDown={handleKeyDown}>
         <h2 className="text-sm font-bold tracking-widest mb-5" style={{ color }}>
-          {t("project.newProject")}
+          {isEdit ? t("project.editProject") : t("project.newProject")}
         </h2>
 
         {/* Name */}
@@ -112,7 +116,7 @@ export function ProjectModal({ open, onClose, onSave }: ProjectModalProps) {
         </div>
 
         {/* Color */}
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="block text-xs text-secondary mb-1.5">
             {t("project.color")}
           </label>
@@ -131,6 +135,22 @@ export function ProjectModal({ open, onClose, onSave }: ProjectModalProps) {
               />
             ))}
           </div>
+        </div>
+
+        {/* Target Hours */}
+        <div className="mb-6">
+          <label className="block text-xs text-secondary mb-1.5">
+            {t("project.targetHours")}
+          </label>
+          <input
+            type="number"
+            min={0}
+            max={168}
+            value={targetHours || ""}
+            onChange={(e) => setTargetHours(Number(e.target.value) || 0)}
+            placeholder="0"
+            className="input-base w-24 text-center"
+          />
         </div>
 
         {/* Actions */}
