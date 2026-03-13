@@ -17,6 +17,7 @@ export const ProjectSchema = z.object({
   targetHours: z.number(),
   days: z.array(DayName),
   status: ProjectStatus,
+  githubRepo: z.string().nullable().optional(),
 });
 export type Project = z.infer<typeof ProjectSchema>;
 

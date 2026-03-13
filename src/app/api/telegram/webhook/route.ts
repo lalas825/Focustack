@@ -248,6 +248,150 @@ async function handleProjects(chatId: number) {
   await reply(chatId, `Proyectos activos:\n${list}`);
 }
 
+// ─── GITHUB: FETCH RECENT COMMITS ────────────────────
+async function fetchRecentCommits(repo: string): Promise<{ message: string; date: string }[]> {
+  const token = process.env.GITHUB_TOKEN || "";
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(); // last 48h
+
+  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/commits?since=${since}&per_page=50`,
+      { headers }
+    );
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    return (data as { commit: { message: string; author: { date: string } } }[]).map((c) => ({
+      message: c.commit.message.split("\n")[0], // first line only
+      date: c.commit.author.date,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ─── MATCH COMMITS TO TASKS ──────────────────────────
+function matchCommitToTask(commitMsg: string, taskText: string): boolean {
+  const commitLower = commitMsg.toLowerCase();
+  const taskLower = taskText.toLowerCase();
+
+  // Extract significant words (3+ chars) from task
+  const taskWords = taskLower.split(/\s+/).filter((w) => w.length >= 3);
+  if (taskWords.length === 0) return false;
+
+  // Count how many task words appear in the commit
+  const matchCount = taskWords.filter((w) => commitLower.includes(w)).length;
+  const matchRatio = matchCount / taskWords.length;
+
+  // Match if 50%+ of task words found in commit
+  return matchRatio >= 0.5;
+}
+
+// ─── COMMAND: /review ────────────────────────────────
+async function handleReview(chatId: number, args: string) {
+  const db = getSupabaseAdmin();
+
+  // Get project: by name if specified, otherwise today's
+  let project;
+  if (args.trim()) {
+    project = await findProject(USER_ID, args.trim());
+    if (!project) {
+      await reply(chatId, `No encontre el proyecto "${args.trim()}". Usa /projects para ver la lista.`);
+      return;
+    }
+  } else {
+    project = await getTodayProject(USER_ID);
+    if (!project) {
+      await reply(chatId, "No hay proyecto asignado para hoy.");
+      return;
+    }
+  }
+
+  // Get github_repo for this project
+  const { data: projectData } = await db
+    .from("user_projects")
+    .select("github_repo")
+    .eq("id", project.id)
+    .single();
+
+  const repo = projectData?.github_repo;
+  if (!repo) {
+    await reply(chatId, `${project.emoji} ${project.name} no tiene repo de GitHub configurado. Editalo en la app para agregar el repo.`);
+    return;
+  }
+
+  await reply(chatId, `Revisando ${project.emoji} ${project.name} (${repo})...`);
+
+  // Fetch commits
+  const commits = await fetchRecentCommits(repo);
+  if (commits.length === 0) {
+    await reply(chatId, `No hay commits recientes en ${repo} (ultimas 48h).`);
+    return;
+  }
+
+  // Get pending tasks
+  const { data: tasks } = await db
+    .from("tasks")
+    .select("id, text")
+    .eq("user_id", USER_ID)
+    .eq("project_id", project.id)
+    .eq("done", false)
+    .order("created_at", { ascending: true });
+
+  if (!tasks || tasks.length === 0) {
+    const commitList = commits.slice(0, 10).map((c) => `  - ${c.message}`).join("\n");
+    await reply(chatId, `${commits.length} commits en ${repo}, pero no hay tareas pendientes.\n\nCommits recientes:\n${commitList}`);
+    return;
+  }
+
+  // Match commits to tasks
+  const matched: { taskId: string; taskText: string; commitMsg: string }[] = [];
+  const unmatched: string[] = [];
+
+  for (const task of tasks) {
+    const match = commits.find((c) => matchCommitToTask(c.message, task.text));
+    if (match) {
+      matched.push({ taskId: task.id, taskText: task.text, commitMsg: match.message });
+    } else {
+      unmatched.push(task.text);
+    }
+  }
+
+  // Auto-complete matched tasks
+  if (matched.length > 0) {
+    const ids = matched.map((m) => m.taskId);
+    await db
+      .from("tasks")
+      .update({ done: true })
+      .in("id", ids)
+      .eq("user_id", USER_ID);
+  }
+
+  // Build report
+  let report = `REVIEW — ${project.emoji} ${project.name}\n${commits.length} commits (48h) | ${tasks.length} tareas\n`;
+
+  if (matched.length > 0) {
+    report += `\nCompletadas automaticamente (${matched.length}):\n`;
+    report += matched.map((m) => `  ${m.taskText}\n    ← ${m.commitMsg}`).join("\n");
+  }
+
+  if (unmatched.length > 0) {
+    report += `\n\nPendientes (${unmatched.length}):\n`;
+    report += unmatched.map((t, i) => `  ${i + 1}. ${t}`).join("\n");
+  }
+
+  if (matched.length === 0) {
+    report += "\nNo se encontraron matches entre commits y tareas.";
+    report += `\n\nCommits recientes:\n`;
+    report += commits.slice(0, 8).map((c) => `  - ${c.message}`).join("\n");
+  }
+
+  await reply(chatId, report);
+}
+
 // ─── WEBHOOK HANDLER ─────────────────────────────────
 export async function POST(request: Request) {
   try {
@@ -289,10 +433,13 @@ export async function POST(request: Request) {
       case "/bulk":
         await handleBulk(chatId, args);
         break;
+      case "/review":
+        await handleReview(chatId, args);
+        break;
       case "/start":
         await reply(
           chatId,
-          "FocusStack Bot activo.\n\nComandos:\n/task [Proyecto]: tarea\n/bulk Proyecto + lista\n/tasks — ver pendientes\n/done [#] — completar tarea\n/projects — ver proyectos"
+          "FocusStack Bot activo.\n\nComandos:\n/task [Proyecto]: tarea\n/bulk Proyecto + lista\n/tasks — ver pendientes\n/done [#] — completar tarea\n/review [Proyecto] — auto-check GitHub\n/projects — ver proyectos"
         );
         break;
       default:

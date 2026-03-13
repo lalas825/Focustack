@@ -21,8 +21,8 @@ const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
 interface ProjectModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (project: { name: string; emoji: string; color: string; targetHours: number }) => void;
-  initialValues?: { name: string; emoji: string; color: string; targetHours: number };
+  onSave: (project: { name: string; emoji: string; color: string; targetHours: number; githubRepo?: string }) => void;
+  initialValues?: { name: string; emoji: string; color: string; targetHours: number; githubRepo?: string };
 }
 
 export function ProjectModal({ open, onClose, onSave, initialValues }: ProjectModalProps) {
@@ -31,6 +31,7 @@ export function ProjectModal({ open, onClose, onSave, initialValues }: ProjectMo
   const [emoji, setEmoji] = useState("📁");
   const [color, setColor] = useState("#7B68EE");
   const [targetHours, setTargetHours] = useState(0);
+  const [githubRepo, setGithubRepo] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const isEdit = !!initialValues;
 
@@ -40,6 +41,7 @@ export function ProjectModal({ open, onClose, onSave, initialValues }: ProjectMo
       setEmoji(initialValues?.emoji ?? "📁");
       setColor(initialValues?.color ?? "#7B68EE");
       setTargetHours(initialValues?.targetHours ?? 0);
+      setGithubRepo(initialValues?.githubRepo ?? "");
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open, initialValues]);
@@ -48,7 +50,7 @@ export function ProjectModal({ open, onClose, onSave, initialValues }: ProjectMo
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave({ name: name.trim(), emoji, color, targetHours });
+    onSave({ name: name.trim(), emoji, color, targetHours, githubRepo: githubRepo.trim() || undefined });
     onClose();
   };
 
@@ -138,7 +140,7 @@ export function ProjectModal({ open, onClose, onSave, initialValues }: ProjectMo
         </div>
 
         {/* Target Hours */}
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="block text-xs text-secondary mb-1.5">
             {t("project.targetHours")}
           </label>
@@ -150,6 +152,19 @@ export function ProjectModal({ open, onClose, onSave, initialValues }: ProjectMo
             onChange={(e) => setTargetHours(Number(e.target.value) || 0)}
             placeholder="0"
             className="input-base w-24 text-center"
+          />
+        </div>
+
+        {/* GitHub Repo */}
+        <div className="mb-6">
+          <label className="block text-xs text-secondary mb-1.5">
+            GitHub Repo
+          </label>
+          <input
+            value={githubRepo}
+            onChange={(e) => setGithubRepo(e.target.value)}
+            placeholder="owner/repo"
+            className="input-base w-full text-xs"
           />
         </div>
 

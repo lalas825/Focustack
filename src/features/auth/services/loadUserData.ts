@@ -104,6 +104,7 @@ export async function loadUserData(userId: string) {
       targetHours: row.target_hours ?? 0,
       days: [],
       status: (row.status === "completed" ? "completed" : "active") as Project["status"],
+      githubRepo: row.github_repo ?? null,
     }));
     useCustomProjectsStore.setState({ projects, userId });
   }

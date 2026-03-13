@@ -154,6 +154,7 @@ export function ProjectsTab() {
               emoji: p.emoji,
               color: p.color,
               targetHours: p.targetHours,
+              githubRepo: p.githubRepo,
             });
           }
         }}
@@ -162,6 +163,7 @@ export function ProjectsTab() {
           emoji: editProject.emoji,
           color: editProject.color,
           targetHours: editProject.targetHours,
+          githubRepo: editProject.githubRepo ?? "",
         } : undefined}
       />
 

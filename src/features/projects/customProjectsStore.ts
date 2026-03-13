@@ -9,7 +9,7 @@ interface CustomProjectsState {
   projects: Project[];
   userId: string | null;
   addProject: (name: string, emoji: string, color: string) => void;
-  updateProject: (id: string, fields: { name?: string; emoji?: string; color?: string; targetHours?: number }) => void;
+  updateProject: (id: string, fields: { name?: string; emoji?: string; color?: string; targetHours?: number; githubRepo?: string }) => void;
   completeProject: (id: string) => void;
   removeProject: (id: string) => void;
 }
@@ -60,6 +60,7 @@ export const useCustomProjectsStore = create<CustomProjectsState>((set, get) => 
     if (fields.emoji !== undefined) dbFields.emoji = fields.emoji;
     if (fields.color !== undefined) dbFields.color = fields.color;
     if (fields.targetHours !== undefined) dbFields.target_hours = fields.targetHours;
+    if (fields.githubRepo !== undefined) dbFields.github_repo = fields.githubRepo || null;
 
     syncToSupabase({
       op: () => createClient().from("user_projects").update(dbFields).eq("id", id).eq("user_id", userId),
