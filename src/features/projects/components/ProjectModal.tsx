@@ -9,6 +9,15 @@ const COLOR_PRESETS = [
   "#F97316", "#06B6D4", "#A855F7", "#EF4444",
 ];
 
+const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
+  { label: "Work", emojis: ["💼", "🏗️", "📊", "📈", "🛠️", "⚙️", "🔧", "📋", "📝", "💡"] },
+  { label: "Tech", emojis: ["💻", "🖥️", "📱", "🤖", "🧪", "🔮", "⚡", "🚀", "🎮", "🌐"] },
+  { label: "Creative", emojis: ["🎨", "🎬", "📸", "🎵", "✏️", "📐", "🎭", "🖌️", "📖", "🎯"] },
+  { label: "Finance", emojis: ["💰", "💵", "📉", "🏦", "💎", "🪙", "💳", "🧾", "📦", "🏪"] },
+  { label: "Health", emojis: ["🏋️", "🧘", "🍎", "❤️", "🧠", "🌱", "☀️", "🏃", "💪", "🌿"] },
+  { label: "Other", emojis: ["📁", "⭐", "🔥", "🎉", "🏆", "👑", "🦾", "🌍", "🐝", "🦅"] },
+];
+
 interface ProjectModalProps {
   open: boolean;
   onClose: () => void;
@@ -70,17 +79,36 @@ export function ProjectModal({ open, onClose, onSave }: ProjectModalProps) {
           />
         </div>
 
-        {/* Emoji */}
+        {/* Emoji picker */}
         <div className="mb-4">
           <label className="block text-xs text-secondary mb-1.5">
             {t("project.emoji")}
           </label>
-          <input
-            value={emoji}
-            onChange={(e) => setEmoji(e.target.value)}
-            className="input-base w-16 text-center text-lg"
-            maxLength={4}
-          />
+          <div className="bg-bg-surface rounded-xl border border-bg-elevated p-2 max-h-[200px] overflow-y-auto">
+            {EMOJI_GROUPS.map((group) => (
+              <div key={group.label} className="mb-2 last:mb-0">
+                <div className="text-[9px] text-text-dark tracking-widest uppercase px-1 mb-1">
+                  {group.label}
+                </div>
+                <div className="flex flex-wrap gap-0.5">
+                  {group.emojis.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setEmoji(e)}
+                      className="w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all hover:bg-bg-elevated"
+                      style={{
+                        backgroundColor: emoji === e ? color + "25" : "transparent",
+                        outline: emoji === e ? `2px solid ${color}` : "none",
+                      }}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Color */}
