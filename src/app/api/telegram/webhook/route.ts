@@ -110,6 +110,51 @@ async function handleTask(chatId: number, args: string) {
   await reply(chatId, `Tarea agregada a ${project.emoji} ${project.name}: ${taskText}`);
 }
 
+// ─── COMMAND: /bulk ──────────────────────────────────
+async function handleBulk(chatId: number, args: string) {
+  const lines = args.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    await reply(chatId, "Uso: /bulk Proyecto\n- tarea 1\n- tarea 2\n- tarea 3");
+    return;
+  }
+
+  // First line = project name, rest = tasks
+  const projectName = lines[0].replace(/^[-•*]\s*/, "").trim();
+  const taskLines = lines.slice(1)
+    .map((l) => l.replace(/^[-•*]\s*/, "").trim())
+    .filter(Boolean);
+
+  if (taskLines.length === 0) {
+    await reply(chatId, "Agrega tareas despues del nombre del proyecto:\n/bulk Jantile\n- tarea 1\n- tarea 2");
+    return;
+  }
+
+  const project = await findProject(USER_ID, projectName);
+  if (!project) {
+    await reply(chatId, `No encontre el proyecto "${projectName}". Usa /projects para ver la lista.`);
+    return;
+  }
+
+  const db = getSupabaseAdmin();
+  const rows = taskLines.map((text) => ({
+    user_id: USER_ID,
+    project_id: project.id,
+    text,
+    done: false,
+    priority: "medium" as const,
+  }));
+
+  const { error } = await db.from("tasks").insert(rows);
+
+  if (error) {
+    await reply(chatId, "Error al agregar las tareas. Intenta de nuevo.");
+    return;
+  }
+
+  const list = taskLines.map((t, i) => `  ${i + 1}. ${t}`).join("\n");
+  await reply(chatId, `${taskLines.length} tareas agregadas a ${project.emoji} ${project.name}:\n${list}`);
+}
+
 // ─── COMMAND: /tasks ─────────────────────────────────
 async function handleTasks(chatId: number) {
   const project = await getTodayProject(USER_ID);
@@ -241,10 +286,13 @@ export async function POST(request: Request) {
       case "/projects":
         await handleProjects(chatId);
         break;
+      case "/bulk":
+        await handleBulk(chatId, args);
+        break;
       case "/start":
         await reply(
           chatId,
-          "FocusStack Bot activo.\n\nComandos:\n/task [Proyecto]: tarea\n/tasks — ver pendientes\n/done [#] — completar tarea\n/projects — ver proyectos"
+          "FocusStack Bot activo.\n\nComandos:\n/task [Proyecto]: tarea\n/bulk Proyecto + lista\n/tasks — ver pendientes\n/done [#] — completar tarea\n/projects — ver proyectos"
         );
         break;
       default:
