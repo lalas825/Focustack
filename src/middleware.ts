@@ -33,7 +33,8 @@ export async function middleware(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth/callback") &&
-    !request.nextUrl.pathname.startsWith("/waitlist")
+    !request.nextUrl.pathname.startsWith("/waitlist") &&
+    !request.nextUrl.pathname.startsWith("/api/telegram")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
