@@ -128,6 +128,16 @@ const translations = {
     // Footer
     "footer.tagline": "FOCUSTACK v2.0 · THE MACHINE THAT BUILDS THE MACHINE",
 
+    // Error toasts
+    "error.taskAdd": "Failed to save task",
+    "error.taskToggle": "Failed to update task",
+    "error.taskDelete": "Failed to delete task",
+    "error.projectAdd": "Failed to save project",
+    "error.projectDelete": "Failed to delete project",
+    "error.scheduleSync": "Failed to update schedule",
+    "error.logSync": "Failed to save session log",
+    "error.hoursSyncFailed": "Hours sync failed — data safe locally",
+
     // Days (short)
     "days.0": "Sun",
     "days.1": "Mon",
@@ -247,6 +257,15 @@ const translations = {
 
     "footer.tagline": "FOCUSTACK v2.0 · LA MAQUINA QUE CONSTRUYE LA MAQUINA",
 
+    "error.taskAdd": "No se pudo guardar la tarea",
+    "error.taskToggle": "No se pudo actualizar la tarea",
+    "error.taskDelete": "No se pudo eliminar la tarea",
+    "error.projectAdd": "No se pudo guardar el proyecto",
+    "error.projectDelete": "No se pudo eliminar el proyecto",
+    "error.scheduleSync": "No se pudo actualizar el horario",
+    "error.logSync": "No se pudo guardar el registro",
+    "error.hoursSyncFailed": "Error al sincronizar horas — datos guardados localmente",
+
     "days.0": "Dom",
     "days.1": "Lun",
     "days.2": "Mar",
@@ -259,7 +278,7 @@ const translations = {
 
 // ─── TYPES ─────────────────────────────────────────────
 export type Locale = "en" | "es";
-type TranslationKey = keyof (typeof translations)["en"];
+export type TranslationKey = keyof (typeof translations)["en"];
 
 // ─── CONTEXT ───────────────────────────────────────────
 interface I18nContextValue {
@@ -278,11 +297,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("focustack-locale") as Locale | null;
     if (saved && (saved === "en" || saved === "es")) {
       setLocaleState(saved);
+      _setLocaleForSync(saved);
     }
   }, []);
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
+    _setLocaleForSync(newLocale);
     localStorage.setItem("focustack-locale", newLocale);
     document.documentElement.lang = newLocale;
   };
@@ -304,4 +325,15 @@ export function useTranslation() {
   const ctx = useContext(I18nContext);
   if (!ctx) throw new Error("useTranslation must be used within I18nProvider");
   return ctx;
+}
+
+// ─── MODULE-LEVEL ACCESSOR (for Zustand stores outside React) ───
+let _currentLocale: Locale = "en";
+
+export function _setLocaleForSync(locale: Locale) {
+  _currentLocale = locale;
+}
+
+export function tSync(key: TranslationKey): string {
+  return translations[_currentLocale]?.[key] ?? translations.en[key] ?? key;
 }

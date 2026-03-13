@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "../store";
 import { loadUserData } from "../services/loadUserData";
+import { resetAllStores } from "@/shared/lib/resetStores";
 
 export function useAuth() {
   const { setUser, setLoading } = useAuthStore();
@@ -28,6 +29,7 @@ export function useAuth() {
       } else {
         setUser(null);
         loaded.current = false;
+        resetAllStores();
       }
       setLoading(false);
     });

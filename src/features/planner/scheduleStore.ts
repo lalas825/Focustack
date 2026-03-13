@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { createClient } from "@/lib/supabase/client";
+import { syncToSupabase } from "@/shared/lib/supabase-sync";
 
 type Schedule = Record<number, string[]>; // dayIndex (0-6) → projectId[]
 
@@ -23,6 +24,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
   toggleProject: (day, projectId) => {
     const current = get().schedule;
+    const snapshot = { ...current };
     const dayProjects = current[day] || [];
     const exists = dayProjects.includes(projectId);
 
@@ -34,24 +36,19 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     };
     set({ schedule: updated });
 
-    // Background sync
     getUserId().then((userId) => {
       if (!userId) return;
-      const supabase = createClient();
-      if (exists) {
-        supabase
-          .from("daily_assignments")
-          .delete()
-          .eq("user_id", userId)
-          .eq("day_of_week", day)
-          .eq("project_id", projectId)
-          .then(({ error }) => { if (error) console.error("assignment delete:", error); });
-      } else {
-        supabase
-          .from("daily_assignments")
-          .insert({ user_id: userId, day_of_week: day, project_id: projectId })
-          .then(({ error }) => { if (error) console.error("assignment insert:", error); });
-      }
+      syncToSupabase({
+        op: () => {
+          const supabase = createClient();
+          return exists
+            ? supabase.from("daily_assignments").delete().eq("user_id", userId).eq("day_of_week", day).eq("project_id", projectId)
+            : supabase.from("daily_assignments").insert({ user_id: userId, day_of_week: day, project_id: projectId });
+        },
+        rollbackState: snapshot,
+        restore: (s) => set({ schedule: s }),
+        errorKey: "error.scheduleSync",
+      });
     });
   },
 }));

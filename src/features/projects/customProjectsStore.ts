@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import type { Project } from "@/shared/types";
 import { createClient } from "@/lib/supabase/client";
+import { syncToSupabase } from "@/shared/lib/supabase-sync";
 
 interface CustomProjectsState {
   projects: Project[];
@@ -31,29 +32,32 @@ export const useCustomProjectsStore = create<CustomProjectsState>((set, get) => 
       status: "active",
     };
 
-    set({ projects: [...get().projects, newProject] });
+    const snapshot = [...get().projects];
+    set({ projects: [...snapshot, newProject] });
 
-    // Background sync
     getUserId().then((userId) => {
       if (!userId) return;
-      createClient()
-        .from("user_projects")
-        .insert({ id, user_id: userId, name, emoji, color })
-        .then(({ error }) => { if (error) console.error("user_projects insert:", error); });
+      syncToSupabase({
+        op: () => createClient().from("user_projects").insert({ id, user_id: userId, name, emoji, color }),
+        rollbackState: snapshot,
+        restore: (s) => set({ projects: s }),
+        errorKey: "error.projectAdd",
+      });
     });
   },
 
   removeProject: (id) => {
-    set({ projects: get().projects.filter((p) => p.id !== id) });
+    const snapshot = [...get().projects];
+    set({ projects: snapshot.filter((p) => p.id !== id) });
 
     getUserId().then((userId) => {
       if (!userId) return;
-      createClient()
-        .from("user_projects")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", userId)
-        .then(({ error }) => { if (error) console.error("user_projects delete:", error); });
+      syncToSupabase({
+        op: () => createClient().from("user_projects").delete().eq("id", id).eq("user_id", userId),
+        rollbackState: snapshot,
+        restore: (s) => set({ projects: s }),
+        errorKey: "error.projectDelete",
+      });
     });
   },
 }));

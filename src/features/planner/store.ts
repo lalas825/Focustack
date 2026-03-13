@@ -5,6 +5,7 @@ import type { HoursMap } from "@/shared/types";
 import { PROJECTS } from "@/features/projects/data/projects";
 import { getWeekStart } from "@/shared/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { syncToSupabaseNotifyOnly } from "@/shared/lib/supabase-sync";
 
 function defaultHours(): HoursMap {
   const map: HoursMap = {};
@@ -41,12 +42,11 @@ export const useHoursStore = create<HoursState>((set, get) => ({
     updated[projectId] = (updated[projectId] || 0) + seconds;
     set({ hours: updated });
 
-    // Background sync
+    // Notify-only — no rollback for accumulative timer ticks
     getUserId().then((userId) => {
       if (!userId) return;
-      createClient()
-        .from("weekly_hours")
-        .upsert(
+      syncToSupabaseNotifyOnly({
+        op: () => createClient().from("weekly_hours").upsert(
           {
             user_id: userId,
             project_id: projectId,
@@ -55,8 +55,9 @@ export const useHoursStore = create<HoursState>((set, get) => ({
             updated_at: new Date().toISOString(),
           },
           { onConflict: "user_id,project_id,week_start" }
-        )
-        .then(({ error }) => { if (error) console.error("hours upsert:", error); });
+        ),
+        errorKey: "error.hoursSyncFailed",
+      });
     });
   },
 }));

@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import type { SessionLog } from "@/shared/types";
 import { createClient } from "@/lib/supabase/client";
+import { syncToSupabase } from "@/shared/lib/supabase-sync";
 
 interface LogsState {
   logs: SessionLog[];
@@ -19,15 +20,14 @@ export const useLogsStore = create<LogsState>((set, get) => ({
   logs: [],
 
   addLog: (log) => {
-    const updated = [log, ...get().logs].slice(0, 100);
+    const snapshot = [...get().logs];
+    const updated = [log, ...snapshot].slice(0, 100);
     set({ logs: updated });
 
-    // Background sync
     getUserId().then((userId) => {
       if (!userId) return;
-      createClient()
-        .from("session_logs")
-        .insert({
+      syncToSupabase({
+        op: () => createClient().from("session_logs").insert({
           user_id: userId,
           date: log.date,
           day: log.day,
@@ -37,8 +37,11 @@ export const useLogsStore = create<LogsState>((set, get) => ({
           completed: log.completed,
           blockers: log.blockers,
           tomorrow_project: log.tomorrowProject,
-        })
-        .then(({ error }) => { if (error) console.error("logs insert:", error); });
+        }),
+        rollbackState: snapshot,
+        restore: (s) => set({ logs: s }),
+        errorKey: "error.logSync",
+      });
     });
   },
 }));

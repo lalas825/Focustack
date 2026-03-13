@@ -10,10 +10,14 @@ import { PROJECTS } from "@/features/projects/data/projects";
 import { DAYS } from "@/shared/lib/utils";
 import type { Task, TasksMap, HoursMap, SessionLog, Project } from "@/shared/types";
 import { getWeekStart } from "@/shared/lib/utils";
+import { resetAllStores } from "@/shared/lib/resetStores";
 
 export async function loadUserData(userId: string) {
   const supabase = createClient();
   const currentWeek = getWeekStart();
+
+  // Reset all stores to prevent data leaking between users
+  resetAllStores();
 
   // Migrate localStorage data on first login
   await migrateLocalStorage(userId, supabase);
@@ -65,7 +69,7 @@ export async function loadUserData(userId: string) {
         estimationMinutes: row.estimation_minutes ?? null,
       });
     }
-    useTasksStore.setState({ tasks: { ...useTasksStore.getState().tasks, ...tasksMap } });
+    useTasksStore.setState({ tasks: tasksMap });
   }
 
   // Hydrate hours store
@@ -74,7 +78,7 @@ export async function loadUserData(userId: string) {
     for (const row of hoursRes.data) {
       hoursMap[row.project_id] = row.seconds;
     }
-    useHoursStore.setState({ hours: { ...useHoursStore.getState().hours, ...hoursMap }, weekStart: currentWeek });
+    useHoursStore.setState({ hours: hoursMap, weekStart: currentWeek });
   }
 
   // Hydrate logs store
