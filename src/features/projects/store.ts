@@ -7,22 +7,21 @@ import { syncToSupabase } from "@/shared/lib/supabase-sync";
 
 interface TasksState {
   tasks: TasksMap;
+  userId: string | null;
   addTask: (projectId: string, text: string, priority?: Priority, estimationMinutes?: number | null) => void;
   toggleTask: (projectId: string, taskId: string) => void;
   deleteTask: (projectId: string, taskId: string) => void;
 }
 
-async function getUserId(): Promise<string | null> {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
-
 export const useTasksStore = create<TasksState>((set, get) => ({
   tasks: {},
+  userId: null,
 
   addTask: (projectId, text, priority = "medium", estimationMinutes = null) => {
     if (!text.trim()) return;
+    const userId = get().userId;
+    if (!userId) return;
+
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
     const newTask: Task = { id, text: text.trim(), done: false, createdAt, priority, estimationMinutes: estimationMinutes ?? null };
@@ -32,18 +31,18 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     updated[projectId] = [...(updated[projectId] || []), newTask];
     set({ tasks: updated });
 
-    getUserId().then((userId) => {
-      if (!userId) return;
-      syncToSupabase({
-        op: () => createClient().from("tasks").insert({ id, user_id: userId, project_id: projectId, text: newTask.text, done: false, created_at: createdAt, priority, estimation_minutes: estimationMinutes ?? null }),
-        rollbackState: snapshot,
-        restore: (s) => set({ tasks: s }),
-        errorKey: "error.taskAdd",
-      });
+    syncToSupabase({
+      op: () => createClient().from("tasks").insert({ id, user_id: userId, project_id: projectId, text: newTask.text, done: false, created_at: createdAt, priority, estimation_minutes: estimationMinutes ?? null }),
+      rollbackState: snapshot,
+      restore: (s) => set({ tasks: s }),
+      errorKey: "error.taskAdd",
     });
   },
 
   toggleTask: (projectId, taskId) => {
+    const userId = get().userId;
+    if (!userId) return;
+
     const snapshot = get().tasks;
     const updated = { ...snapshot };
     let newDone = false;
@@ -56,31 +55,28 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     });
     set({ tasks: updated });
 
-    getUserId().then((userId) => {
-      if (!userId) return;
-      syncToSupabase({
-        op: () => createClient().from("tasks").update({ done: newDone }).eq("id", taskId).eq("user_id", userId),
-        rollbackState: snapshot,
-        restore: (s) => set({ tasks: s }),
-        errorKey: "error.taskToggle",
-      });
+    syncToSupabase({
+      op: () => createClient().from("tasks").update({ done: newDone }).eq("id", taskId).eq("user_id", userId),
+      rollbackState: snapshot,
+      restore: (s) => set({ tasks: s }),
+      errorKey: "error.taskToggle",
     });
   },
 
   deleteTask: (projectId, taskId) => {
+    const userId = get().userId;
+    if (!userId) return;
+
     const snapshot = get().tasks;
     const updated = { ...snapshot };
     updated[projectId] = (updated[projectId] || []).filter((t) => t.id !== taskId);
     set({ tasks: updated });
 
-    getUserId().then((userId) => {
-      if (!userId) return;
-      syncToSupabase({
-        op: () => createClient().from("tasks").delete().eq("id", taskId).eq("user_id", userId),
-        rollbackState: snapshot,
-        restore: (s) => set({ tasks: s }),
-        errorKey: "error.taskDelete",
-      });
+    syncToSupabase({
+      op: () => createClient().from("tasks").delete().eq("id", taskId).eq("user_id", userId),
+      rollbackState: snapshot,
+      restore: (s) => set({ tasks: s }),
+      errorKey: "error.taskDelete",
     });
   },
 }));

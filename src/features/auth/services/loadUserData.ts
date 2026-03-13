@@ -67,7 +67,7 @@ export async function loadUserData(userId: string) {
         estimationMinutes: row.estimation_minutes ?? null,
       });
     }
-    useTasksStore.setState({ tasks: tasksMap });
+    useTasksStore.setState({ tasks: tasksMap, userId });
   }
 
   // Hydrate hours store
@@ -76,7 +76,7 @@ export async function loadUserData(userId: string) {
     for (const row of hoursRes.data) {
       hoursMap[row.project_id] = row.seconds;
     }
-    useHoursStore.setState({ hours: hoursMap, weekStart: currentWeek });
+    useHoursStore.setState({ hours: hoursMap, weekStart: currentWeek, userId });
   }
 
   // Hydrate logs store
@@ -91,7 +91,7 @@ export async function loadUserData(userId: string) {
       blockers: row.blockers,
       tomorrowProject: row.tomorrow_project,
     }));
-    useLogsStore.setState({ logs });
+    useLogsStore.setState({ logs, userId });
   }
 
   // Hydrate custom projects store
@@ -105,7 +105,7 @@ export async function loadUserData(userId: string) {
       days: [],
       status: (row.status === "completed" ? "completed" : "active") as Project["status"],
     }));
-    useCustomProjectsStore.setState({ projects });
+    useCustomProjectsStore.setState({ projects, userId });
   }
 
   // Hydrate schedule store (daily assignments)
@@ -115,7 +115,7 @@ export async function loadUserData(userId: string) {
       schedule[row.day_of_week].push(row.project_id);
     }
   }
-  useScheduleStore.setState({ schedule, loaded: true });
+  useScheduleStore.setState({ schedule, loaded: true, userId });
 }
 
 // One-time migration of localStorage data to Supabase

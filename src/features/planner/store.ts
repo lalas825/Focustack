@@ -9,24 +9,22 @@ import { syncToSupabaseNotifyOnly } from "@/shared/lib/supabase-sync";
 interface HoursState {
   hours: HoursMap;
   weekStart: string;
+  userId: string | null;
   addSeconds: (projectId: string, seconds: number) => void;
-}
-
-async function getUserId(): Promise<string | null> {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
 }
 
 export const useHoursStore = create<HoursState>((set, get) => ({
   hours: {},
   weekStart: getWeekStart(),
+  userId: null,
 
   addSeconds: (projectId, seconds) => {
+    const userId = get().userId;
+    if (!userId) return;
+
     const currentWeek = getWeekStart();
     const state = get();
 
-    // Auto-reset if new week
     if (state.weekStart !== currentWeek) {
       set({ hours: {}, weekStart: currentWeek });
     }
@@ -35,22 +33,18 @@ export const useHoursStore = create<HoursState>((set, get) => ({
     updated[projectId] = (updated[projectId] || 0) + seconds;
     set({ hours: updated });
 
-    // Notify-only — no rollback for accumulative timer ticks
-    getUserId().then((userId) => {
-      if (!userId) return;
-      syncToSupabaseNotifyOnly({
-        op: () => createClient().from("weekly_hours").upsert(
-          {
-            user_id: userId,
-            project_id: projectId,
-            week_start: currentWeek,
-            seconds: updated[projectId],
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id,project_id,week_start" }
-        ),
-        errorKey: "error.hoursSyncFailed",
-      });
+    syncToSupabaseNotifyOnly({
+      op: () => createClient().from("weekly_hours").upsert(
+        {
+          user_id: userId,
+          project_id: projectId,
+          week_start: currentWeek,
+          seconds: updated[projectId],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,project_id,week_start" }
+      ),
+      errorKey: "error.hoursSyncFailed",
     });
   },
 }));

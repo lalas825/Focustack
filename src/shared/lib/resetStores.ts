@@ -14,13 +14,14 @@ import { getWeekStart } from "@/shared/lib/utils";
  * Ensures zero residual data between user sessions.
  */
 export function resetAllStores() {
-  useTasksStore.setState({ tasks: {} });
-  useHoursStore.setState({ hours: {}, weekStart: getWeekStart() });
-  useLogsStore.setState({ logs: [] });
-  useCustomProjectsStore.setState({ projects: [] });
+  useTasksStore.setState({ tasks: {}, userId: null });
+  useHoursStore.setState({ hours: {}, weekStart: getWeekStart(), userId: null });
+  useLogsStore.setState({ logs: [], userId: null });
+  useCustomProjectsStore.setState({ projects: [], userId: null });
   useScheduleStore.setState({
     schedule: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] },
     loaded: false,
+    userId: null,
   });
   useTimerStore.setState({
     seconds: 0,
