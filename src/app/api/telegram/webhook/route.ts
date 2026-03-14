@@ -8,12 +8,36 @@ const ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID || process.env.NEXT
 const USER_ID = process.env.TELEGRAM_USER_ID || "";
 
 // ─── TELEGRAM REPLY ─────────────────────────────────
-async function reply(chatId: number | string, text: string) {
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+const MAX_MSG = 4000; // Telegram limit is 4096, leave margin
+
+async function sendOne(chatId: number | string, text: string) {
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    body: JSON.stringify({ chat_id: chatId, text }),
   });
+  if (!res.ok) {
+    console.error(`Telegram send error: ${res.status} ${await res.text()}`);
+  }
+}
+
+async function reply(chatId: number | string, text: string) {
+  if (text.length <= MAX_MSG) {
+    await sendOne(chatId, text);
+    return;
+  }
+  // Split by lines, send in chunks
+  const lines = text.split("\n");
+  let chunk = "";
+  for (const line of lines) {
+    if (chunk.length + line.length + 1 > MAX_MSG) {
+      await sendOne(chatId, chunk);
+      chunk = line;
+    } else {
+      chunk += (chunk ? "\n" : "") + line;
+    }
+  }
+  if (chunk) await sendOne(chatId, chunk);
 }
 
 // ─── GET TODAY'S PROJECT ─────────────────────────────
