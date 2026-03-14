@@ -47,6 +47,17 @@ export default function Dashboard() {
 
   useEffect(() => setMounted(true), []);
 
+  // Auto-set timer to today's project if no project is selected
+  useEffect(() => {
+    if (!mounted) return;
+    if (timer.project.id === "") {
+      const today = getTodayProject();
+      if (today.id !== "") {
+        timer.setProject(today);
+      }
+    }
+  }, [mounted, customProjects]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [showFriction, setShowFriction] = useState(false);
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
   const [showEndSession, setShowEndSession] = useState(false);
