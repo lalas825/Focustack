@@ -1,5 +1,6 @@
 "use client";
 
+import { createClient } from "@/lib/supabase/client";
 import { useTasksStore } from "@/features/projects/store";
 import { useHoursStore } from "@/features/planner/store";
 import { useLogsStore } from "@/features/logs/store";
@@ -14,6 +15,11 @@ import { getWeekStart } from "@/shared/lib/utils";
  * Ensures zero residual data between user sessions.
  */
 export function resetAllStores() {
+  // Unsubscribe realtime channels
+  createClient().removeChannel(
+    createClient().channel("tasks-realtime")
+  );
+
   useTasksStore.setState({ tasks: {}, userId: null });
   useHoursStore.setState({ hours: {}, weekStart: getWeekStart(), userId: null });
   useLogsStore.setState({ logs: [], userId: null });

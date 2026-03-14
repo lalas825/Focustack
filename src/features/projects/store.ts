@@ -11,6 +11,7 @@ interface TasksState {
   addTask: (projectId: string, text: string, priority?: Priority, estimationMinutes?: number | null) => void;
   toggleTask: (projectId: string, taskId: string) => void;
   deleteTask: (projectId: string, taskId: string) => void;
+  refreshTasks: () => void;
 }
 
 export const useTasksStore = create<TasksState>((set, get) => ({
@@ -78,6 +79,34 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       restore: (s) => set({ tasks: s }),
       errorKey: "error.taskDelete",
     });
+  },
+
+  refreshTasks: async () => {
+    const userId = get().userId;
+    if (!userId) return;
+
+    const { data } = await createClient()
+      .from("tasks")
+      .select("id, project_id, text, done, created_at, priority, estimation_minutes")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+
+    if (!data) return;
+
+    const tasksMap: TasksMap = {};
+    for (const row of data) {
+      const task: Task = {
+        id: row.id,
+        text: row.text,
+        done: row.done,
+        createdAt: row.created_at,
+        priority: row.priority || "medium",
+        estimationMinutes: row.estimation_minutes ?? null,
+      };
+      if (!tasksMap[row.project_id]) tasksMap[row.project_id] = [];
+      tasksMap[row.project_id].push(task);
+    }
+    set({ tasks: tasksMap });
   },
 }));
 

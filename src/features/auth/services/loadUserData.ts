@@ -117,6 +117,18 @@ export async function loadUserData(userId: string) {
     }
   }
   useScheduleStore.setState({ schedule, loaded: true, userId });
+
+  // Subscribe to realtime task changes (e.g. from Telegram bot)
+  supabase
+    .channel("tasks-realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${userId}` },
+      () => {
+        useTasksStore.getState().refreshTasks();
+      }
+    )
+    .subscribe();
 }
 
 // One-time migration of localStorage data to Supabase
