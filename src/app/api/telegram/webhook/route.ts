@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
+export const maxDuration = 30;
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || "";
 const ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID || process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID || "";
 const USER_ID = process.env.TELEGRAM_USER_ID || "";
@@ -345,16 +347,20 @@ async function handleReview(chatId: number, args: string) {
 
     await reply(chatId, `Revisando ${projects.length} proyectos...`);
 
+    // Fetch all projects in parallel
+    const results = await Promise.all(
+      projects.map((p) => reviewProject(db, p, p.github_repo!))
+    );
+
     let totalMatched = 0;
     let totalPending = 0;
     let fullReport = "REVIEW ALL — Reporte completo\n";
 
-    for (const p of projects) {
-      const result = await reviewProject(db, p, p.github_repo!);
+    for (const result of results) {
       totalMatched += result.matched.length;
       totalPending += result.unmatched.length;
 
-      fullReport += `\n${p.emoji} ${p.name} (${result.commits} commits)\n`;
+      fullReport += `\n${result.project.emoji} ${result.project.name} (${result.commits} commits)\n`;
 
       if (result.matched.length > 0) {
         fullReport += result.matched.map((m) => `  ✓ ${m.taskText}`).join("\n") + "\n";
