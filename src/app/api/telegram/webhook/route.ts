@@ -255,22 +255,34 @@ async function fetchRecentCommits(repo: string): Promise<{ message: string; date
   const token = process.env.GITHUB_TOKEN || "";
   const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(); // last 48h
 
-  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "FocusStack-Bot",
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
     const res = await fetch(
       `https://api.github.com/repos/${repo}/commits?since=${since}&per_page=50`,
-      { headers }
+      { headers, signal: controller.signal }
     );
-    if (!res.ok) return [];
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      console.error(`GitHub API error for ${repo}: ${res.status}`);
+      return [];
+    }
 
     const data = await res.json();
     return (data as { commit: { message: string; author: { date: string } } }[]).map((c) => ({
       message: c.commit.message.split("\n")[0], // first line only
       date: c.commit.author.date,
     }));
-  } catch {
+  } catch (e) {
+    console.error(`GitHub fetch failed for ${repo}:`, e);
     return [];
   }
 }
@@ -424,13 +436,8 @@ async function handleReview(chatId: number, args: string) {
     report += result.unmatched.map((t, i) => `  ${i + 1}. ${t}`).join("\n");
   }
 
-  if (result.matched.length === 0) {
+  if (result.matched.length === 0 && result.tasks > 0) {
     report += "\nNo se encontraron matches entre commits y tareas.";
-    if (result.commits > 0) {
-      const commits = await fetchRecentCommits(repo);
-      report += `\n\nCommits recientes:\n`;
-      report += commits.slice(0, 8).map((c) => `  - ${c.message}`).join("\n");
-    }
   }
 
   await reply(chatId, report);
