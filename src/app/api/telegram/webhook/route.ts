@@ -311,21 +311,100 @@ async function fetchRecentCommits(repo: string): Promise<{ message: string; date
   }
 }
 
+// ─── BILINGUAL SYNONYMS ─────────────────────────────
+const SYNONYMS: Record<string, string[]> = {
+  add: ["agregar", "crear", "create", "new", "nuevo", "añadir"],
+  fix: ["arreglar", "corregir", "repair", "bug", "hotfix", "patch"],
+  update: ["actualizar", "modificar", "change", "edit", "editar", "cambiar"],
+  delete: ["eliminar", "borrar", "remove", "quitar", "drop"],
+  setup: ["configurar", "config", "configure", "instalar", "install", "init"],
+  auth: ["login", "autenticacion", "autenticación", "authentication", "signin", "signup", "registro"],
+  page: ["pagina", "página", "vista", "view", "screen", "pantalla"],
+  test: ["prueba", "testing", "verificar", "verify", "check"],
+  deploy: ["desplegar", "deployment", "publicar", "publish", "release"],
+  style: ["estilo", "css", "tailwind", "diseño", "design", "theme", "tema"],
+  crud: ["create", "read", "update", "delete", "agregar", "eliminar", "editar"],
+  modal: ["dialog", "popup", "dialogo", "diálogo"],
+  list: ["lista", "tabla", "table", "grid"],
+  button: ["boton", "botón", "btn", "click"],
+  search: ["buscar", "busqueda", "búsqueda", "filter", "filtrar", "filtro"],
+  send: ["enviar", "submit", "mandar"],
+  save: ["guardar", "store", "persist", "persistir"],
+  load: ["cargar", "fetch", "obtener", "get"],
+  show: ["mostrar", "display", "render", "visualizar"],
+  hide: ["ocultar", "toggle"],
+  image: ["imagen", "foto", "photo", "picture", "img"],
+  cost: ["costo", "precio", "price", "estimate", "estimacion", "estimación"],
+  drawing: ["dibujo", "plano", "plan", "blueprint"],
+  project: ["proyecto"],
+  sync: ["sincronizar", "sincronización", "synchronize"],
+  offline: ["desconectado", "sin conexion", "sin conexión"],
+  notification: ["notificacion", "notificación", "alerta", "alert"],
+  export: ["exportar", "download", "descargar"],
+  import: ["importar", "upload", "subir"],
+  billing: ["facturacion", "facturación", "payment", "pago", "stripe", "checkout"],
+  webhook: ["hook", "callback", "endpoint"],
+  middleware: ["gate", "guard", "proteger"],
+  scaffold: ["boilerplate", "template", "plantilla", "skeleton"],
+  refactor: ["refactorizar", "restructure", "reestructurar", "cleanup", "limpiar"],
+};
+
+// Build reverse lookup: word → all its synonyms
+const SYNONYM_MAP = new Map<string, Set<string>>();
+for (const [, group] of Object.entries(SYNONYMS)) {
+  const allWords = [...group, ...Object.keys(SYNONYMS).filter((k) => SYNONYMS[k] === group || group === SYNONYMS[k])];
+  // Add the key itself
+  for (const entry of Object.entries(SYNONYMS)) {
+    if (entry[1] === group) allWords.push(entry[0]);
+  }
+  const unique = [...new Set(allWords)];
+  for (const w of unique) {
+    if (!SYNONYM_MAP.has(w)) SYNONYM_MAP.set(w, new Set());
+    for (const s of unique) SYNONYM_MAP.get(w)!.add(s);
+  }
+}
+// Simpler: just build from SYNONYMS directly
+function getSynonyms(word: string): string[] {
+  for (const [key, group] of Object.entries(SYNONYMS)) {
+    const all = [key, ...group];
+    if (all.includes(word)) return all;
+  }
+  return [word];
+}
+
+const STOP_WORDS = new Set([
+  "the", "and", "for", "with", "that", "this", "from", "have", "has", "was", "are",
+  "been", "will", "can", "not", "but", "all", "por", "para", "con", "que", "los",
+  "las", "del", "una", "unos", "unas", "como", "mas", "más", "cada", "sin", "cuando",
+  "donde", "hay", "ser", "estar", "tener", "hacer", "poder", "deber", "usar",
+]);
+
 // ─── MATCH COMMITS TO TASKS ──────────────────────────
 function matchCommitToTask(commitMsg: string, taskText: string): boolean {
   const commitLower = commitMsg.toLowerCase();
   const taskLower = taskText.toLowerCase();
 
-  // Extract significant words (3+ chars) from task
-  const taskWords = taskLower.split(/\s+/).filter((w) => w.length >= 3);
+  // Extract significant words: 3+ chars, not stop words, not common prefixes
+  const taskWords = taskLower
+    .replace(/[^\w\sáéíóúñü]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
   if (taskWords.length === 0) return false;
 
-  // Count how many task words appear in the commit
-  const matchCount = taskWords.filter((w) => commitLower.includes(w)).length;
+  // Strip conventional commit prefix from commit: "feat: xxx" → "xxx"
+  const commitClean = commitLower.replace(/^(feat|fix|chore|docs|style|refactor|test|ci|build|perf)(\(.+?\))?:\s*/, "");
+
+  // Count matches — a word matches if it OR any synonym appears in the commit
+  const matchCount = taskWords.filter((w) => {
+    if (commitClean.includes(w)) return true;
+    const syns = getSynonyms(w);
+    return syns.some((s) => commitClean.includes(s));
+  }).length;
+
   const matchRatio = matchCount / taskWords.length;
 
-  // Match if 50%+ of task words found in commit
-  return matchRatio >= 0.5;
+  // Match if 40%+ of task words found (lowered from 50% for bilingual flexibility)
+  return matchRatio >= 0.4;
 }
 
 // ─── REVIEW ONE PROJECT ─────────────────────────────
