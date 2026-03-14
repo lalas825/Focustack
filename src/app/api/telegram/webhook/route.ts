@@ -290,11 +290,91 @@ function matchCommitToTask(commitMsg: string, taskText: string): boolean {
   return matchRatio >= 0.5;
 }
 
+// ─── REVIEW ONE PROJECT ─────────────────────────────
+async function reviewProject(db: ReturnType<typeof getSupabaseAdmin>, project: { id: string; name: string; emoji: string }, repo: string) {
+  const commits = await fetchRecentCommits(repo);
+
+  const { data: tasks } = await db
+    .from("tasks")
+    .select("id, text")
+    .eq("user_id", USER_ID)
+    .eq("project_id", project.id)
+    .eq("done", false)
+    .order("created_at", { ascending: true });
+
+  const matched: { taskId: string; taskText: string; commitMsg: string }[] = [];
+  const unmatched: string[] = [];
+
+  if (tasks && tasks.length > 0) {
+    for (const task of tasks) {
+      const match = commits.find((c) => matchCommitToTask(c.message, task.text));
+      if (match) {
+        matched.push({ taskId: task.id, taskText: task.text, commitMsg: match.message });
+      } else {
+        unmatched.push(task.text);
+      }
+    }
+
+    if (matched.length > 0) {
+      const ids = matched.map((m) => m.taskId);
+      await db.from("tasks").update({ done: true }).in("id", ids).eq("user_id", USER_ID);
+    }
+  }
+
+  return { project, repo, commits: commits.length, tasks: tasks?.length || 0, matched, unmatched };
+}
+
 // ─── COMMAND: /review ────────────────────────────────
 async function handleReview(chatId: number, args: string) {
   const db = getSupabaseAdmin();
+  const arg = args.trim().toLowerCase();
 
-  // Get project: by name if specified, otherwise today's
+  // /review all — review all projects with repos
+  if (arg === "all" || arg === "todos") {
+    const { data: projects } = await db
+      .from("user_projects")
+      .select("id, name, emoji, github_repo")
+      .eq("user_id", USER_ID)
+      .eq("status", "active")
+      .not("github_repo", "is", null);
+
+    if (!projects || projects.length === 0) {
+      await reply(chatId, "No hay proyectos con repo de GitHub configurado.");
+      return;
+    }
+
+    await reply(chatId, `Revisando ${projects.length} proyectos...`);
+
+    let totalMatched = 0;
+    let totalPending = 0;
+    let fullReport = "REVIEW ALL — Reporte completo\n";
+
+    for (const p of projects) {
+      const result = await reviewProject(db, p, p.github_repo!);
+      totalMatched += result.matched.length;
+      totalPending += result.unmatched.length;
+
+      fullReport += `\n${p.emoji} ${p.name} (${result.commits} commits)\n`;
+
+      if (result.matched.length > 0) {
+        fullReport += result.matched.map((m) => `  ✓ ${m.taskText}`).join("\n") + "\n";
+      }
+      if (result.unmatched.length > 0) {
+        fullReport += result.unmatched.map((t) => `  · ${t}`).join("\n") + "\n";
+      }
+      if (result.tasks === 0 && result.commits === 0) {
+        fullReport += "  Sin actividad\n";
+      } else if (result.tasks === 0) {
+        fullReport += "  Sin tareas pendientes\n";
+      }
+    }
+
+    fullReport += `\nResumen: ${totalMatched} completadas | ${totalPending} pendientes`;
+    await reply(chatId, fullReport);
+    return;
+  }
+
+  // Single project review
   let project;
   if (args.trim()) {
     project = await findProject(USER_ID, args.trim());
@@ -305,12 +385,11 @@ async function handleReview(chatId: number, args: string) {
   } else {
     project = await getTodayProject(USER_ID);
     if (!project) {
-      await reply(chatId, "No hay proyecto asignado para hoy.");
+      await reply(chatId, "No hay proyecto asignado para hoy. Usa /review all para revisar todos.");
       return;
     }
   }
 
-  // Get github_repo for this project
   const { data: projectData } = await db
     .from("user_projects")
     .select("github_repo")
@@ -325,68 +404,27 @@ async function handleReview(chatId: number, args: string) {
 
   await reply(chatId, `Revisando ${project.emoji} ${project.name} (${repo})...`);
 
-  // Fetch commits
-  const commits = await fetchRecentCommits(repo);
-  if (commits.length === 0) {
-    await reply(chatId, `No hay commits recientes en ${repo} (ultimas 48h).`);
-    return;
+  const result = await reviewProject(db, project, repo);
+
+  let report = `REVIEW — ${project.emoji} ${project.name}\n${result.commits} commits (48h) | ${result.tasks} tareas\n`;
+
+  if (result.matched.length > 0) {
+    report += `\nCompletadas automaticamente (${result.matched.length}):\n`;
+    report += result.matched.map((m) => `  ${m.taskText}\n    ← ${m.commitMsg}`).join("\n");
   }
 
-  // Get pending tasks
-  const { data: tasks } = await db
-    .from("tasks")
-    .select("id, text")
-    .eq("user_id", USER_ID)
-    .eq("project_id", project.id)
-    .eq("done", false)
-    .order("created_at", { ascending: true });
-
-  if (!tasks || tasks.length === 0) {
-    const commitList = commits.slice(0, 10).map((c) => `  - ${c.message}`).join("\n");
-    await reply(chatId, `${commits.length} commits en ${repo}, pero no hay tareas pendientes.\n\nCommits recientes:\n${commitList}`);
-    return;
+  if (result.unmatched.length > 0) {
+    report += `\n\nPendientes (${result.unmatched.length}):\n`;
+    report += result.unmatched.map((t, i) => `  ${i + 1}. ${t}`).join("\n");
   }
 
-  // Match commits to tasks
-  const matched: { taskId: string; taskText: string; commitMsg: string }[] = [];
-  const unmatched: string[] = [];
-
-  for (const task of tasks) {
-    const match = commits.find((c) => matchCommitToTask(c.message, task.text));
-    if (match) {
-      matched.push({ taskId: task.id, taskText: task.text, commitMsg: match.message });
-    } else {
-      unmatched.push(task.text);
-    }
-  }
-
-  // Auto-complete matched tasks
-  if (matched.length > 0) {
-    const ids = matched.map((m) => m.taskId);
-    await db
-      .from("tasks")
-      .update({ done: true })
-      .in("id", ids)
-      .eq("user_id", USER_ID);
-  }
-
-  // Build report
-  let report = `REVIEW — ${project.emoji} ${project.name}\n${commits.length} commits (48h) | ${tasks.length} tareas\n`;
-
-  if (matched.length > 0) {
-    report += `\nCompletadas automaticamente (${matched.length}):\n`;
-    report += matched.map((m) => `  ${m.taskText}\n    ← ${m.commitMsg}`).join("\n");
-  }
-
-  if (unmatched.length > 0) {
-    report += `\n\nPendientes (${unmatched.length}):\n`;
-    report += unmatched.map((t, i) => `  ${i + 1}. ${t}`).join("\n");
-  }
-
-  if (matched.length === 0) {
+  if (result.matched.length === 0) {
     report += "\nNo se encontraron matches entre commits y tareas.";
-    report += `\n\nCommits recientes:\n`;
-    report += commits.slice(0, 8).map((c) => `  - ${c.message}`).join("\n");
+    if (result.commits > 0) {
+      const commits = await fetchRecentCommits(repo);
+      report += `\n\nCommits recientes:\n`;
+      report += commits.slice(0, 8).map((c) => `  - ${c.message}`).join("\n");
+    }
   }
 
   await reply(chatId, report);
@@ -439,7 +477,7 @@ export async function POST(request: Request) {
       case "/start":
         await reply(
           chatId,
-          "FocusStack Bot activo.\n\nComandos:\n/task [Proyecto]: tarea\n/bulk Proyecto + lista\n/tasks — ver pendientes\n/done [#] — completar tarea\n/review [Proyecto] — auto-check GitHub\n/projects — ver proyectos"
+          "FocusStack Bot activo.\n\nComandos:\n/task [Proyecto]: tarea\n/bulk Proyecto + lista\n/tasks — ver pendientes\n/done [#] — completar tarea\n/review [Proyecto] — auto-check GitHub\n/review all — revisar todos los proyectos\n/projects — ver proyectos"
         );
         break;
       default:
